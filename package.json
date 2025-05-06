@@ -17,10 +17,12 @@
     "axios": "^1.9.0",
     "body-parser": "2.2.0",
     "cors": "^2.8.5",
+    "diff2html": "^3.4.51",
     "dotenv": "^16.5.0",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
     "express-ejs-layouts": "^2.5.1",
+    "marked": "^15.0.11",
     "mime-types": "3.0.1",
     "mongoose": "^8.0.3",
     "zod": "^3.24.3"

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %> - Gemini Code Helper</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css"
+    />
+    <!-- Add diff2html CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css"
+    />
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="nav-header">
+        <div class="nav-brand">Gemini Code Helper</div>
+      </div>
+      <ul class="nav-menu">
+        <li>
+          <a href="/" class="<%= activePage === 'home' ? 'active' : '' %>"
+            >Home</a
+          >
+        </li>
+        <li>
+          <a
+            href="/generate-readme"
+            class="<%= activePage === 'readme' ? 'active' : '' %>"
+            >Generate README</a
+          >
+        </li>
+        <li>
+          <a
+            href="/suggest-api"
+            class="<%= activePage === 'api' ? 'active' : '' %>"
+            >Suggest API</a
+          >
+        </li>
+        <li>
+          <a
+            href="/explain-code"
+            class="<%= activePage === 'explain' ? 'active' : '' %>"
+            >Explain Code</a
+          >
+        </li>
+        <li>
+          <a
+            href="/fix-code"
+            class="<%= activePage === 'fix' ? 'active' : '' %>"
+            >Fix Code</a
+          >
+        </li>
+        <li>
+          <a
+            href="/history"
+            class="<%= activePage === 'history' ? 'active' : '' %>"
+            >History</a
+          >
+        </li>
+      </ul>
+    </nav>
+
+    <main class="container"><%- body %></main>
+
+    <footer>
+      <p>&copy; 2025 Gemini Code Helper. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <!-- Add diff2html JS -->
+    <script src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
+    <script src="/js/main.js"></script>
+  </body>
+</html>

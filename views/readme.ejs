@@ -1,0 +1,37 @@
+<div class="page-header">
+  <h1>Generate README</h1>
+  <p>
+    Generate professional README files for your projects by providing a project
+    description.
+  </p>
+</div>
+
+<div class="input-section">
+  <form id="readme-form" class="ai-form">
+    <div class="form-group">
+      <label for="projectDescription">Project Description:</label>
+      <textarea
+        id="projectDescription"
+        name="projectDescription"
+        rows="6"
+        required
+        placeholder="Describe your project, its features, and technologies used..."
+      ></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Generate README</button>
+  </form>
+</div>
+
+<div class="output-section" style="display: none">
+  <h2>Generated README</h2>
+  <div class="actions">
+    <button id="copyBtn" class="btn btn-secondary">Copy to Clipboard</button>
+    <button id="downloadBtn" class="btn btn-secondary">Download as MD</button>
+  </div>
+  <div id="result" class="code-output markdown-preview"></div>
+</div>
+
+<div class="loading" style="display: none">
+  <div class="spinner"></div>
+  <p>Generating README...</p>
+</div>

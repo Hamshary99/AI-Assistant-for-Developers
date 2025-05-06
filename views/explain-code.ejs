@@ -1,0 +1,56 @@
+<div class="page-header">
+  <h1>Explain Code</h1>
+  <p>
+    Get detailed explanations of your code with examples and best practices.
+  </p>
+</div>
+
+<div class="input-section">
+  <form id="explain-form" class="ai-form">
+    <div class="form-group">
+      <label for="code">Your Code:</label>
+      <textarea
+        id="code"
+        name="code"
+        rows="10"
+        required
+        placeholder="Paste your code here..."
+      ></textarea>
+    </div>
+    <div class="form-group">
+      <label for="language">Programming Language:</label>
+      <select id="language" name="language" required>
+        <option value="javascript">JavaScript</option>
+        <option value="typescript">TypeScript</option>
+        <option value="python">Python</option>
+        <option value="java">Java</option>
+        <option value="csharp">C#</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Explain Code</button>
+  </form>
+</div>
+
+<div class="output-section" style="display: none">
+  <h2>Code Analysis</h2>
+  <div id="result" class="explanation-output">
+    <div class="overview">
+      <h3>Overview</h3>
+      <p class="overview-content"></p>
+    </div>
+    <div class="line-reviews">
+      <h3>Line-by-Line Analysis</h3>
+      <div class="line-reviews-content"></div>
+    </div>
+    <div class="udiff">
+      <h3>Suggested Changes</h3>
+      <pre><code class="udiff-content"></code></pre>
+    </div>
+  </div>
+</div>
+
+<div class="loading" style="display: none">
+  <div class="spinner"></div>
+  <p>Analyzing code...</p>
+</div>

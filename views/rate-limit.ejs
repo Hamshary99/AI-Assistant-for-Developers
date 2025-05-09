@@ -1,0 +1,205 @@
+<%- include('layouts/main') %>
+
+<div class="error-page">
+  <div class="error-content rate-limit">
+    <h1>Rate Limit Exceeded</h1>
+    <div class="rate-limit-info">
+      <div class="rate-limit-icon">⏳</div>
+      <p class="error-message">
+        To ensure fair usage and maintain service quality for all users, we need
+        to limit the number of requests.
+      </p>
+      <div class="rate-limit-details">
+        <p>Please wait <strong><%= timeLeft %></strong> before trying again.</p>
+        <div class="limit-stats">
+          <div class="stat">
+            <span class="label">Requests Made</span>
+            <span class="value"
+              ><%= currentRequests %> / <%= maxRequests %></span
+            >
+          </div>
+          <div class="stat">
+            <span class="label">Reset Time</span>
+            <span class="value"><%= resetTime %></span>
+          </div>
+        </div>
+        <div class="usage-bar">
+          <div class="fill" style="width: <%= usagePercent %>%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="suggestions">
+      <h3>While You Wait...</h3>
+      <ul>
+        <li>
+          📋 Review your previous requests in the
+          <a href="/history">History</a> section
+        </li>
+        <li>🔍 Explore other features of our AI Assistant</li>
+        <li>📝 Prepare your next request</li>
+      </ul>
+    </div>
+    <div class="error-actions">
+      <button onclick="window.history.back()" class="btn btn-secondary">
+        Go Back
+      </button>
+      <a href="/" class="btn btn-primary">Go to Home</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Show notification at page load
+    showNotification({
+      title: "Rate Limit Reached",
+      message: "Taking a quick break to ensure service quality.",
+      type: "rate-limit",
+      details: `Please wait ${timeLeft}. Next attempt available at ${resetTime}.`,
+      duration: 10000,
+    });
+  });
+</script>
+
+<style>
+  .rate-limit {
+    text-align: center;
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: var(--background-secondary);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .rate-limit h1 {
+    color: var(--color-primary);
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+  }
+
+  .rate-limit-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .rate-limit-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    animation: pulse 2s infinite;
+  }
+
+  .rate-limit-details {
+    background: var(--background-primary);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    width: 100%;
+  }
+
+  .limit-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .usage-bar {
+    height: 4px;
+    background: rgba(255, 215, 0, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 1rem;
+  }
+
+  .usage-bar .fill {
+    height: 100%;
+    background: #ffd700;
+    transition: width 0.3s ease;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .stat .label {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+  }
+
+  .stat .value {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--color-text);
+  }
+
+  .suggestions {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--background-primary);
+    border-radius: 8px;
+    text-align: left;
+  }
+
+  .suggestions h3 {
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+  }
+
+  .suggestions ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .suggestions li {
+    margin: 0.8rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .suggestions a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .suggestions a:hover {
+    text-decoration: underline;
+  }
+
+  .error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @media (max-width: 600px) {
+    .rate-limit {
+      margin: 1rem;
+      padding: 1.5rem;
+    }
+
+    .limit-stats {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

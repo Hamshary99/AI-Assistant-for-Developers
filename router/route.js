@@ -1,4 +1,5 @@
 import express from "express";
+import upload from "../middleware/filesReader.js";
 import {
   generateReadme,
   suggestApi,
@@ -10,11 +11,11 @@ import {
 
 const router = express.Router();
 
-router.post("/generate-readme", generateReadme);
+router.post("/generate-readme", upload, generateReadme);
 router.post("/suggest-api", suggestApi);
-router.post("/explain-code", explainCode);
-router.post("/fix-code", fixCode);
-router.post("/compare-code", compareCode);
+router.post("/explain-code", upload, explainCode);
+router.post("/fix-code", upload, fixCode);
+router.post("/compare-code", upload, compareCode);
 
 // History endpoint
 router.get("/history", getUserRequestHistory);

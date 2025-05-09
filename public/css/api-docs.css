@@ -1,0 +1,137 @@
+.api-docs {
+  background: var(--background-secondary);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.api-docs h3 {
+  color: var(--color-primary);
+  margin-bottom: 15px;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.endpoint-section {
+  margin-bottom: 25px;
+}
+
+.endpoint-details {
+  display: grid;
+  gap: 10px;
+}
+
+.endpoint-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--background-primary);
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.endpoint-row .label {
+  font-weight: bold;
+  color: var(--color-accent);
+  min-width: 80px;
+}
+
+.endpoint-row .value {
+  color: var(--color-text);
+}
+
+.params-section {
+  margin: 20px 0;
+}
+
+.params-list {
+  background: var(--background-primary);
+  border-radius: 4px;
+  padding: 15px;
+}
+
+.param-item {
+  margin-bottom: 10px;
+  padding-left: 20px;
+  position: relative;
+}
+
+.param-item:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--color-accent);
+}
+
+.param-item:last-child {
+  margin-bottom: 0;
+}
+
+.request-section,
+.response-section {
+  margin: 20px 0;
+}
+
+.request-section pre,
+.response-section pre {
+  margin: 10px 0;
+  border-radius: 4px;
+  background: var(--background-primary);
+}
+
+.api-docs code {
+  font-family: "Fira Code", monospace;
+  font-size: 0.9em;
+  padding: 15px;
+  border-radius: 4px;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.method-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.9em;
+  text-transform: uppercase;
+}
+
+.method-badge.get {
+  background: #61affe;
+  color: #fff;
+}
+.method-badge.post {
+  background: #49cc90;
+  color: #fff;
+}
+.method-badge.put {
+  background: #fca130;
+  color: #fff;
+}
+.method-badge.delete {
+  background: #f93e3e;
+  color: #fff;
+}
+.method-badge.patch {
+  background: #50e3c2;
+  color: #fff;
+}
+
+.api-path {
+  font-family: "Fira Code", monospace;
+  background: var(--background-primary);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.95em;
+  margin-top: 10px;
+}
+
+.path-param {
+  color: var(--color-accent);
+}
+
+.query-param {
+  color: var(--color-success);
+}

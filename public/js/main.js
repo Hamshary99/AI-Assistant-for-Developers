@@ -1,3 +1,68 @@
+// Notification System
+const showNotification = ({
+  title,
+  message,
+  type = "info",
+  details = null,
+  duration = 5000,
+}) => {
+  // Create container if it doesn't exist
+  let container = document.querySelector(".notification-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.className = "notification-container";
+    document.body.appendChild(container);
+  }
+
+  // Create notification element
+  const notification = document.createElement("div");
+  notification.className = `notification ${type}`;
+
+  let icon = "💡";
+  switch (type) {
+    case "rate-limit":
+      icon = "⏳";
+      break;
+    case "error":
+      icon = "❌";
+      break;
+    case "success":
+      icon = "✅";
+      break;
+  }
+
+  notification.innerHTML = `
+    <div class="notification-icon">${icon}</div>
+    <div class="notification-content">
+      <h4 class="notification-title">${title}</h4>
+      <p class="notification-message">${message}</p>
+      ${details ? `<div class="notification-details">${details}</div>` : ""}
+      <div class="notification-progress">
+        <div class="notification-progress-bar"></div>
+      </div>
+    </div>
+    <button class="notification-close">×</button>
+  `;
+
+  // Add to container
+  container.appendChild(notification);
+
+  // Handle close button
+  const closeBtn = notification.querySelector(".notification-close");
+  closeBtn.addEventListener("click", () => {
+    notification.style.animation = "slideOut 0.3s ease-out forwards";
+    setTimeout(() => notification.remove(), 300);
+  });
+
+  // Auto remove after duration
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.style.animation = "slideOut 0.3s ease-out forwards";
+      setTimeout(() => notification.remove(), 300);
+    }
+  }, duration);
+};
+
 // Utility functions
 const showLoading = () => {
   document.querySelector(".loading").style.display = "block";
@@ -16,6 +81,56 @@ const copyToClipboard = async (text) => {
   } catch (err) {
     console.error("Failed to copy:", err);
   }
+};
+
+// File handling functions
+const updateFileList = (fileInput) => {
+  const fileList = fileInput.closest("form").querySelector(".file-list");
+  if (!fileList) return;
+
+  fileList.innerHTML = "";
+  Array.from(fileInput.files).forEach((file, index) => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span class="file-name">${file.name}</span>
+      <button type="button" class="remove-file" data-index="${index}">×</button>
+    `;
+    fileList.appendChild(li);
+  });
+};
+
+const handleFileInput = () => {
+  const forms = document.querySelectorAll(".ai-form");
+  forms.forEach((form) => {
+    const fileInput = form.querySelector('input[type="file"]');
+    if (!fileInput) return;
+
+    // Handle file selection
+    fileInput.addEventListener("change", () => {
+      updateFileList(fileInput);
+    });
+
+    // Handle file removal
+    const fileList = form.querySelector(".file-list");
+    if (fileList) {
+      fileList.addEventListener("click", (e) => {
+        if (e.target.classList.contains("remove-file")) {
+          const index = parseInt(e.target.dataset.index);
+          const dt = new DataTransfer();
+          const files = fileInput.files;
+
+          for (let i = 0; i < files.length; i++) {
+            if (i !== index) {
+              dt.items.add(files[i]);
+            }
+          }
+
+          fileInput.files = dt.files;
+          updateFileList(fileInput);
+        }
+      });
+    }
+  });
 };
 
 // Download function for README
@@ -136,36 +251,171 @@ const escapeHtml = (unsafe) => {
     .replace(/'/g, "&#039;");
 };
 
-// Form handlers
+// Form handlers with improved error handling
+const handleFormError = async (error, response) => {
+  console.error("Error:", error);
+  hideLoading();
+
+  try {
+    // If we have a response object, try to parse it
+    const errorData = response ? await response.json() : null;
+
+    if (response?.status === 429) {
+      showNotification({
+        title: "Taking a Quick Break",
+        message:
+          errorData?.message || "Rate limit reached. Please wait a moment.",
+        type: "rate-limit",
+        details: errorData?.details
+          ? `
+          <div class="rate-limit-info">
+            <div class="usage-stats">
+              <p>Requests: ${errorData.details.currentRequests}/${errorData.details.maxRequests}</p>
+              <div class="usage-bar">
+                <div class="fill" style="width: ${errorData.details.usagePercent}%"></div>
+              </div>
+            </div>
+            <p>Next attempt available at: ${errorData.details.resetTime}</p>
+            <p class="suggestion">${errorData.details.suggestedAction}</p>
+          </div>
+        `
+          : null,
+        duration: 10000,
+      });
+
+      return {
+        html: `
+          <div class="rate-limit-info">
+            <h3>🕒 Taking a Quick Break</h3>
+            <p>${
+              errorData?.message || "Rate limit reached. Please wait a moment."
+            }</p>
+            <div class="timer-info">
+              <div class="usage-stats">
+                <span>Requests: ${errorData?.details?.currentRequests || "0"}/${
+          errorData?.details?.maxRequests || "5"
+        }</span>
+                <div class="usage-bar">
+                  <div class="fill" style="width: ${
+                    errorData?.details?.usagePercent || 0
+                  }%"></div>
+                </div>
+              </div>
+              <p class="reset-time">Next attempt available at ${
+                errorData?.details?.resetTime || "shortly"
+              }</p>
+            </div>
+          </div>
+        `,
+        isError: true,
+      };
+    }
+
+    // For other API errors
+    showNotification({
+      title: "Error",
+      message: errorData?.message || error.message || "Something went wrong",
+      type: "error",
+      duration: 5000,
+    });
+
+    return {
+      html: `
+        <div class="error-message" style="color: var(--error-color); padding: 1rem; border-left: 3px solid var(--error-color);">
+          <h3>Error</h3>
+          <p>${
+            errorData?.message ||
+            error.message ||
+            "An unexpected error occurred. Please try again."
+          }</p>
+          ${
+            errorData?.details
+              ? `<div class="error-details">${JSON.stringify(
+                  errorData.details
+                )}</div>`
+              : ""
+          }
+        </div>
+      `,
+      isError: true,
+    };
+  } catch (parseError) {
+    // If we can't parse the error response, show a generic error
+    showNotification({
+      title: "Error",
+      message: error.message || "Something went wrong",
+      type: "error",
+      duration: 5000,
+    });
+
+    return {
+      html: `
+        <div class="error-message" style="color: var(--error-color); padding: 1rem; border-left: 3px solid var(--error-color);">
+          <h3>Error</h3>
+          <p>${
+            error.message || "An unexpected error occurred. Please try again."
+          }</p>
+        </div>
+      `,
+      isError: true,
+    };
+  }
+};
+
+const handleApiRequest = async (url, method, data) => {
+  const response = await fetch(url, {
+    method: method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw {
+      message: response.statusText,
+      response: response,
+    };
+  }
+
+  const responseData = await response.json();
+  if (!responseData.success) {
+    throw {
+      message: responseData.message,
+      response: response,
+    };
+  }
+
+  return responseData;
+};
+
 const handleReadmeForm = async (e) => {
   e.preventDefault();
   const description = document.getElementById("projectDescription").value;
+  const resultDiv = document.getElementById("result");
 
   showLoading();
   try {
-    const response = await fetch("/api/generate-readme", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectDescription: description }),
+    const data = await handleApiRequest("/api/generate-readme", "POST", {
+      projectDescription: description,
     });
-
-    const data = await response.json();
-    const resultDiv = document.getElementById("result");
     resultDiv.innerHTML = marked.parse(data.data.content);
-
-    // Store the raw markdown for download
     resultDiv.dataset.markdown = data.data.content;
 
-    // Setup download button
     document.getElementById("downloadBtn").onclick = () => {
       downloadMarkdown(data.data.content);
     };
 
     hideLoading();
+
+    showNotification({
+      title: "Success",
+      message: "README generated successfully",
+      type: "success",
+      duration: 3000,
+    });
   } catch (error) {
-    console.error("Error:", error);
-    hideLoading();
-    alert("Failed to generate README. Please try again.");
+    const { html } = await handleFormError(error, error.response);
+    resultDiv.innerHTML = html;
+    resultDiv.style.display = "block";
   }
 };
 
@@ -173,28 +423,33 @@ const handleApiForm = async (e) => {
   e.preventDefault();
   const requirements = document.getElementById("requirements").value;
   const method = document.getElementById("method").value;
+  const result = document.getElementById("result");
 
   showLoading();
   try {
-    const response = await fetch("/api/suggest-api", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ requirements, method }),
+    const data = await handleApiRequest("/api/suggest-api", "POST", {
+      requirements,
+      method,
     });
 
-    const data = await response.json();
-    const result = document.getElementById("result");
-    result.innerHTML = `<pre><code class="language-json">${JSON.stringify(
-      data.data.content,
-      null,
-      2
-    )}</code></pre>`;
-    hljs.highlightElement(result.querySelector("code"));
+    // Parse the API response content
+    const content = data.data.content;
+    const sections = parseApiContent(content);
+
+    // Generate the formatted HTML
+    result.innerHTML = generateApiResponseHtml(sections);
     hideLoading();
+
+    showNotification({
+      title: "Success",
+      message: "API endpoint generated successfully",
+      type: "success",
+      duration: 3000,
+    });
   } catch (error) {
-    console.error("Error:", error);
-    hideLoading();
-    alert("Failed to generate API suggestion. Please try again.");
+    const { html } = await handleFormError(error, error.response);
+    result.innerHTML = html;
+    result.style.display = "block";
   }
 };
 
@@ -202,23 +457,40 @@ const handleExplainForm = async (e) => {
   e.preventDefault();
   const code = document.getElementById("code").value;
   const language = document.getElementById("language").value;
+  const fileInput = document.getElementById("codeFile");
 
   showLoading();
   try {
+    const formData = new FormData();
+    formData.append("code", code);
+    formData.append("language", language);
+
+    if (fileInput && fileInput.files) {
+      Array.from(fileInput.files).forEach((file) => {
+        formData.append("files", file);
+      });
+    }
+
     const response = await fetch("/api/explain-code", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, language }),
+      body: formData,
     });
+
+    if (!response.ok) {
+      const errorResponse = await response.json();
+      throw {
+        message: errorResponse.message,
+        response: response,
+        details: errorResponse.details,
+      };
+    }
 
     const data = await response.json();
     const result = data.data.content;
     const output = document.getElementById("result");
 
-    // Display overview
     output.querySelector(".overview-content").textContent = result.overview;
 
-    // Display line-by-line reviews
     const lineReviewsContent = output.querySelector(".line-reviews-content");
     lineReviewsContent.innerHTML = result.line_reviews
       .map(
@@ -231,7 +503,6 @@ const handleExplainForm = async (e) => {
       )
       .join("");
 
-    // Display suggested changes using the new diff renderer
     const udiffContent = output.querySelector(".udiff-content");
     if (result.udiff) {
       renderUnifiedDiff(result.udiff, udiffContent.parentElement);
@@ -241,10 +512,17 @@ const handleExplainForm = async (e) => {
     }
 
     hideLoading();
+
+    showNotification({
+      title: "Success",
+      message: "Code explanation generated successfully",
+      type: "success",
+      duration: 3000,
+    });
   } catch (error) {
-    console.error("Error:", error);
-    hideLoading();
-    alert("Failed to explain code. Please try again.");
+    const { html } = await handleFormError(error, error.response);
+    document.getElementById("result").innerHTML = html;
+    document.querySelector(".output-section").style.display = "block";
   }
 };
 
@@ -253,57 +531,47 @@ const handleFixForm = async (e) => {
   const code = document.getElementById("code").value;
   const issue = document.getElementById("issue").value;
   const language = document.getElementById("language").value;
+  const fileInput = document.getElementById("codeFile");
   const output = document.getElementById("result");
   const outputSection = document.querySelector(".output-section");
 
   showLoading();
 
   try {
+    const formData = new FormData();
+    formData.append("code", code);
+    formData.append("issue", issue);
+    formData.append("language", language);
+
+    // Add all files
+    if (fileInput && fileInput.files) {
+      Array.from(fileInput.files).forEach((file) => {
+        formData.append("files", file);
+      });
+    }
+
     const response = await fetch("/api/fix-code", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({ code, issue, language }),
+      body: formData,
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorResponse = await response.json();
+      throw {
+        message: errorResponse.message,
+        response: response,
+        details: errorResponse.details,
+      };
     }
 
     const data = await response.json();
-
     if (!data.success) {
       throw new Error(data.message || "Failed to fix code");
     }
 
-    if (!data.data || !data.data.content) {
-      throw new Error("Invalid response format");
-    }
-
     const result = data.data.content;
-
-    // Clear any previous content
-    output.innerHTML = `
-      <div class="overview">
-        <h3>Overview</h3>
-        <p class="overview-content"></p>
-      </div>
-      <div class="line-reviews">
-        <h3>Issues Found</h3>
-        <div class="line-reviews-content"></div>
-      </div>
-      <div class="udiff">
-        <h3>Fixed Code</h3>
-        <pre><code class="udiff-content language-javascript"></code></pre>
-      </div>
-    `;
-
-    // Display overview
     output.querySelector(".overview-content").textContent = result.overview;
 
-    // Display line reviews (issues found)
     const lineReviewsContent = output.querySelector(".line-reviews-content");
     lineReviewsContent.innerHTML = result.line_reviews
       .map(
@@ -316,26 +584,108 @@ const handleFixForm = async (e) => {
       )
       .join("");
 
-    // Display fixed code using the custom renderer
     const udiffContent = output.querySelector(".udiff-content");
     renderCustomDiff(result.udiff, udiffContent.parentElement);
 
-    // Only show the output section after everything is ready
     hideLoading();
     outputSection.style.display = "block";
+
+    showNotification({
+      title: "Success",
+      message: "Code fixed successfully",
+      type: "success",
+      duration: 3000,
+    });
   } catch (error) {
-    console.error("Error:", error);
+    const { html } = await handleFormError(error, error.response);
+    output.innerHTML = html;
+    outputSection.style.display = "block";
+  }
+};
+
+const handleCompareForm = async (e) => {
+  e.preventDefault();
+  const oldCode = document.getElementById("oldCode").value;
+  const newCode = document.getElementById("newCode").value;
+  const output = document.getElementById("result");
+  const outputSection = document.querySelector(".output-section");
+
+  showLoading();
+
+  try {
+    const formData = new FormData();
+    const oldCodeFiles = document.getElementById("oldCodeFile").files;
+    const newCodeFiles = document.getElementById("newCodeFile").files;
+
+    // Add text inputs if provided
+    formData.append("oldCode", oldCode);
+    formData.append("newCode", newCode);
+
+    // Add old code files
+    for (let i = 0; i < oldCodeFiles.length; i++) {
+      formData.append("files", oldCodeFiles[i]);
+    }
+
+    // Add new code files
+    for (let i = 0; i < newCodeFiles.length; i++) {
+      formData.append("files", newCodeFiles[i]);
+    }
+
+    const response = await fetch("/api/compare-code", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorResponse = await response.json();
+      throw {
+        message: errorResponse.message,
+        response: response,
+        details: errorResponse.details,
+      };
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.message || "Failed to compare code");
+    }
+
+    const result = data.data.content;
+
+    output.querySelector(".overview-content").textContent = result.overview;
+
+    const lineReviewsContent = output.querySelector(".line-reviews-content");
+    lineReviewsContent.innerHTML = result.line_reviews
+      .map(
+        (review) => `
+        <div class="review-item ${review.review_type}">
+          <span class="line-number">Line ${review.line}:</span>
+          <span class="review-text">${review.review}</span>
+        </div>
+      `
+      )
+      .join("");
+
+    const udiffContent = output.querySelector(".udiff-content");
+    if (result.udiff) {
+      renderUnifiedDiff(result.udiff, udiffContent.parentElement);
+      udiffContent.parentElement.parentElement.style.display = "block";
+    } else {
+      udiffContent.parentElement.parentElement.style.display = "none";
+    }
+
     hideLoading();
 
-    // Show user-friendly error message in the UI
-    output.innerHTML = `
-      <div class="error-message" style="color: var(--error-color); padding: 1rem; border-left: 3px solid var(--error-color);">
-        <h3>Error</h3>
-        <p>${error.message || "Failed to fix code. Please try again."}</p>
-      </div>
-    `;
-
-    // Show error in output section
+    showNotification({
+      title: "Success",
+      message: "Code comparison completed successfully",
+      type: "success",
+      duration: 3000,
+    });
+  } catch (error) {
+    const { html } = await handleFormError(error, error.response);
+    output.innerHTML = html;
     outputSection.style.display = "block";
   }
 };
@@ -423,11 +773,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const apiForm = document.getElementById("api-form");
   const explainForm = document.getElementById("explain-form");
   const fixForm = document.getElementById("fix-form");
+  const compareForm = document.getElementById("compare-form");
 
   if (readmeForm) readmeForm.addEventListener("submit", handleReadmeForm);
   if (apiForm) apiForm.addEventListener("submit", handleApiForm);
   if (explainForm) explainForm.addEventListener("submit", handleExplainForm);
   if (fixForm) fixForm.addEventListener("submit", handleFixForm);
+  if (compareForm) compareForm.addEventListener("submit", handleCompareForm);
+
+  // Initialize file handling
+  handleFileInput();
 
   // Setup copy buttons in output sections
   document.querySelectorAll("#copyBtn").forEach((btn) => {

@@ -1,0 +1,83 @@
+<div class="page-header">
+  <h1>Compare Code</h1>
+  <p>
+    Compare different versions of code to understand changes and improvements.
+  </p>
+</div>
+
+<div class="input-section">
+  <form id="compare-form" class="ai-form">
+    <div class="form-group">
+      <label for="oldCode">Original Code:</label>
+      <div class="input-options">
+        <textarea
+          id="oldCode"
+          name="oldCode"
+          rows="10"
+          placeholder="Paste your original code here..."
+        ></textarea>
+        <div class="file-upload">
+          <label for="oldCodeFile">Or upload original files:</label>
+          <input
+            type="file"
+            id="oldCodeFile"
+            name="files"
+            multiple
+            accept=".js,.py,.ts,.java,.cs,.txt,text/*"
+          />
+          <small class="file-hint"
+            >You can select multiple files to compare</small
+          >
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="newCode">New Code:</label>
+      <div class="input-options">
+        <textarea
+          id="newCode"
+          name="newCode"
+          rows="10"
+          placeholder="Paste your new code here..."
+        ></textarea>
+        <div class="file-upload">
+          <label for="newCodeFile">Or upload new files:</label>
+          <input
+            type="file"
+            id="newCodeFile"
+            name="files"
+            multiple
+            accept=".js,.py,.ts,.java,.cs,.txt,text/*"
+          />
+          <small class="file-hint"
+            >You can select multiple files to compare</small
+          >
+        </div>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Compare Code</button>
+  </form>
+</div>
+
+<div class="output-section" style="display: none">
+  <h2>Code Comparison</h2>
+  <div id="result" class="comparison-output">
+    <div class="overview">
+      <h3>Overview</h3>
+      <p class="overview-content"></p>
+    </div>
+    <div class="line-reviews">
+      <h3>Changes Analysis</h3>
+      <div class="line-reviews-content"></div>
+    </div>
+    <div class="udiff">
+      <h3>Differences</h3>
+      <pre><code class="udiff-content"></code></pre>
+    </div>
+  </div>
+</div>
+
+<div class="loading" style="display: none">
+  <div class="spinner"></div>
+  <p>Analyzing code differences...</p>
+</div>

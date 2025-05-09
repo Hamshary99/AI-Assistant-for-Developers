@@ -1,0 +1,89 @@
+.rate-limit-info {
+  background: var(--background-lighten);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border-left: 4px solid var(--warning-color);
+}
+
+.rate-limit-info h3 {
+  color: var(--warning-color);
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.timer-info {
+  margin-top: 1rem;
+  color: var(--text-muted);
+}
+
+.usage-stats {
+  margin: 1rem 0;
+}
+
+.usage-bar {
+  height: 6px;
+  background: var(--background-darker);
+  border-radius: 3px;
+  margin: 0.5rem 0;
+  overflow: hidden;
+}
+
+.usage-bar .fill {
+  height: 100%;
+  background: var(--warning-color);
+  transition: width 0.3s ease-out;
+}
+
+.reset-time {
+  font-family: var(--font-mono);
+  color: var(--warning-color);
+  margin: 0.5rem 0;
+}
+
+.suggestion {
+  font-style: italic;
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+}
+
+/* Rate limit notification specific styles */
+.notification.rate-limit {
+  border-left-color: var(--warning-color);
+  background: var(--background-lighten);
+}
+
+.notification.rate-limit .notification-title {
+  color: var(--warning-color);
+}
+
+.notification.rate-limit .notification-progress-bar {
+  background: var(--warning-color);
+}
+
+.rate-limit-info .usage-stats {
+  background: var(--background-darker);
+  padding: 0.75rem;
+  border-radius: 4px;
+}
+
+.rate-limit-info .usage-stats p {
+  margin: 0.25rem 0;
+  font-size: 0.9em;
+}
+
+/* Make the rate limit notification stay longer */
+.notification.rate-limit .notification-progress-bar {
+  animation-duration: 10s;
+}
+
+/* Ensure notifications are always visible */
+.notification-container {
+  z-index: 9999;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  max-width: 400px;
+}

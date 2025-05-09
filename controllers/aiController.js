@@ -10,17 +10,37 @@ import {
 import { logger } from "../utils/logger.js";
 import { saveRequestHistory } from "../db/dbService.js";
 import { marked } from "marked";
+import upload from "../middleware/filesReader.js";
+
+const getFileContent = (req) => {
+  if (req.files && req.files.length > 0) {
+    return req.files
+      .map(
+        (file) =>
+          `### File: ${file.originalname}\n\`\`\`${file.originalname
+            .split(".")
+            .pop()}\n${file.buffer.toString("utf-8")}\n\`\`\``
+      )
+      .join("\n\n");
+  }
+  return null;
+};
 
 export const generateReadme = async (req, res) => {
   try {
     const { projectDescription } = req.body;
-    const prompt = `Generate a professional README.md for the following project: ${projectDescription}. Include sections for Description, Features, Installation, Usage, API (if applicable), Contributing, and License.`;
+    const fileContent = getFileContent(req);
+    const description = fileContent
+      ? `${projectDescription}\n\nProject File Contents:\n${fileContent}`
+      : projectDescription;
+
+    const prompt = `Generate a professional README.md for the following project: ${description}. Include sections for Description, Features, Installation, Usage, API (if applicable), Contributing, and License.`;
     const response = await textOnly(prompt);
 
     await saveRequestHistory({
       userID: null,
       requestType: "generateReadme",
-      prompt: projectDescription,
+      prompt: description,
       responseRaw: response.result,
     });
 
@@ -44,7 +64,37 @@ export const generateReadme = async (req, res) => {
 export const suggestApi = async (req, res) => {
   try {
     const { requirements, method } = req.body;
-    const prompt = `Suggest a REST API endpoint structure for a ${method} endpoint that does the following: ${requirements}. Include path parameters, query parameters, request body schema, and response schema where applicable.`;
+    const prompt = `
+Suggest a REST API endpoint structure for a ${method} endpoint that does the following: ${requirements}
+
+Format your response using this exact structure:
+
+**Method:** ${method}
+**Path:** <endpoint-path>
+
+Parameters:
+* \`parameter-name\` (type) - Description. Add '(Required)' for required parameters.
+
+${
+  method !== "GET"
+    ? `Request Body:
+\`\`\`json
+{
+  // Request body schema
+}
+\`\`\``
+    : ""
+}
+
+Response:
+\`\`\`json
+{
+  // Response schema
+}
+\`\`\`
+
+Include detailed descriptions and validation requirements.`;
+
     const response = await textOnly(prompt);
 
     await saveRequestHistory({
@@ -72,14 +122,17 @@ export const suggestApi = async (req, res) => {
 export const explainCode = async (req, res) => {
   try {
     const { code, language } = req.body;
-    const prompt = `Please analyze the following ${language} code and provide a detailed code review. Include overview, line-by-line explanation, and best practices.`;
+    const fileContent = getFileContent(req);
+    const codeToExplain = fileContent || code;
 
-    const response = await structeredResponse(prompt, code);
+    const prompt = `Please analyze the following ${language} code and provide a detailed code review. Include overview, line-by-line explanation, and best practices for each file.`;
+
+    const response = await structeredResponse(prompt, codeToExplain);
 
     await saveRequestHistory({
       userID: null,
       requestType: "explainCode",
-      prompt: code,
+      prompt: codeToExplain,
       responseStructured: response,
     });
 
@@ -101,20 +154,22 @@ export const explainCode = async (req, res) => {
 export const fixCode = async (req, res) => {
   try {
     const { code, issue, language } = req.body;
+    const fileContent = getFileContent(req);
+    const codeToFix = fileContent || code;
+
     const prompt = `Review and fix the following ${language} code${
       issue ? ` that has this issue: ${issue}` : ""
-    }. Provide a detailed analysis of issues and necessary fixes.`;
+    }. If multiple files are provided, analyze and fix issues in each file. Provide a detailed analysis of issues and necessary fixes.`;
 
-    const response = await structeredResponse(prompt, code);
+    const response = await structeredResponse(prompt, codeToFix);
 
     await saveRequestHistory({
       userID: null,
       requestType: "fixCode",
-      prompt: `${code}\nIssue: ${issue || "No specific issue mentioned"}`,
+      prompt: `${codeToFix}\nIssue: ${issue || "No specific issue mentioned"}`,
       responseStructured: response,
     });
 
-    console.log("fixCode | response", response);
     res.status(200).json(
       formatSuccessResponse(
         {

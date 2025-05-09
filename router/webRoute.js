@@ -99,6 +99,25 @@ webRouter.get("/fix-code", async (req, res) => {
   }
 });
 
+// Compare code page
+webRouter.get("/compare-code", async (req, res) => {
+  try {
+    const history = await getUserHistory(5);
+    res.render("compare-code", {
+      title: "Compare Code",
+      activePage: "compare",
+      history: history,
+    });
+  } catch (error) {
+    console.error("Error rendering compare page:", error);
+    res.status(500).render("error", {
+      title: "Error",
+      message: "Failed to load compare page",
+      activePage: "",
+    });
+  }
+});
+
 // View all history
 webRouter.get("/history", async (req, res) => {
   try {

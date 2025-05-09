@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import expressLayouts from "express-ejs-layouts";
+import rateLimit from "express-rate-limit";
 
 import { appConfig } from "./config/appConfig.js";
 import router from "./router/route.js";
@@ -19,6 +20,9 @@ const PORT = process.env.PORT || 5000;
 dotenv.config();
 const app = express();
 
+// Import and apply the API rate limiter middleware
+import { apiRateLimiter } from "./middleware/rateLimiter.js";
+app.use(apiRateLimiter);
 // Middleware
 app.use(
   cors({

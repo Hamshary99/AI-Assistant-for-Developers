@@ -16,44 +16,44 @@ export const connectToDatabase = async () => {
   }
 };
 
-
 const requestHistorySchema = new mongoose.Schema({
   userID: {
-      // **TBD**
-        type: String,
-        required: false,
-        index: true,
-    },
-    requestType: {
-        type: String,
-        required: true,
-        enum: [
-            "generateReadme",
-            "suggestApi",
-            "explainCode",
-            "fixCode",
-        ],
-    },
-    prompt: {
-        type: String,
-        required: true,
-    },
-    timeStamp: {
-        type: Date,
-        default: Date.now,
-    },
-    metaData: {
-        type: Object,
-        default: {},
+    // **TBD**
+    type: String,
+    required: false,
+    index: true,
   },
-    responseStructured: {
-        type: Object,
-        default: {},
+  requestType: {
+    type: String,
+    required: true,
+    enum: [
+      "generateReadme",
+      "suggestApi",
+      "explainCode",
+      "fixCode",
+      "compareCode",
+    ],
   },
-    responseRaw: {
-        type: String,
-        default: "",
-    },
+  prompt: {
+    type: String,
+    required: true,
+  },
+  timeStamp: {
+    type: Date,
+    default: Date.now,
+  },
+  metaData: {
+    type: Object,
+    default: {},
+  },
+  responseStructured: {
+    type: Object,
+    default: {},
+  },
+  responseRaw: {
+    type: String,
+    default: "",
+  },
 });
 
 // Third argument is to force the collection name in MongoDB without pluralization or lowercasing
@@ -67,37 +67,36 @@ export const RequestHistory = mongoose.model(
 export const saveRequestHistory = async (data) => {
   try {
     if (!mongoose.connection.readyState) {
-      logger.warn('Database connection not available, skipping history save');
+      logger.warn("Database connection not available, skipping history save");
       return null;
     }
-    
+
     const historyEntry = new RequestHistory(data);
     await historyEntry.save();
-    logger.info('Saved request history', { id: historyEntry._id });
+    logger.info("Saved request history", { id: historyEntry._id });
     return historyEntry;
   } catch (error) {
-    logger.error('Failed to save request history', error);
+    logger.error("Failed to save request history", error);
     return null;
   }
 };
-
 
 // Function to get history for a user
 export const getUserHistory = async (limit = 10) => {
   try {
     if (!mongoose.connection.readyState) {
-      logger.warn('Database connection not available, cannot retrieve history');
+      logger.warn("Database connection not available, cannot retrieve history");
       return [];
     }
-    
+
     // const history = await RequestHistory.find({ userId })
     const history = await RequestHistory.find({})
       .sort({ timestamp: -1 })
       .limit(limit);
-      
+
     return history;
   } catch (error) {
-    logger.error('Failed to retrieve user history', error);
+    logger.error("Failed to retrieve user history", error);
     return [];
   }
 };

@@ -1,9 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+
 import { aiConfig } from "../config/aiConfig.js";
 import { schema } from "../config/schema.js";
 import { buildFinalPrompt, buildFinalPromptCompare } from "./promptHandler.js";
-import fs from "node:fs/promises";
-import path from "node:path";
+
 
 const genAI = new GoogleGenerativeAI(aiConfig.gemini.apiKey);
 
@@ -19,11 +19,11 @@ const model = genAI.getGenerativeModel({
 
 
 // This function is used for a text only model of Gemini AI
-export const structeredResponse = async (prompt, code) => {
+export const structuredResponse = async (prompt, code) => {
   try {
     const finalPrompt = buildFinalPrompt(prompt, code);
 
-    console.log("\n\nstructeredResponse | finalPrompt", finalPrompt);
+    console.log("\n\nstructuredResponse | finalPrompt", finalPrompt);
     // const result = await model.generateContent(promptWithExample);
     const aiResponse = await model.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
@@ -55,11 +55,11 @@ export const structeredResponse = async (prompt, code) => {
   }
 };
 
-export const structeredResponseCompare = async (prompt, oldCode, newCode) => {
+export const structuredResponseCompare = async (prompt, oldCode, newCode) => {
   try {
     const finalPrompt = buildFinalPromptCompare(prompt, oldCode, newCode);
 
-    console.log("\n\nstructeredResponse | finalPrompt", finalPrompt);
+    console.log("\n\nstructuredResponseCompare | finalPrompt", finalPrompt);
     // const result = await model.generateContent(promptWithExample);
     const aiResponse = await model.generateContent({
       model: "gemini-2.5-flash-preview-04-17",

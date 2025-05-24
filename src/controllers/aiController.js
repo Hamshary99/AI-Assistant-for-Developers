@@ -1,12 +1,12 @@
 import {
-  structeredResponse,
-  structeredResponseCompare,
-} from "../utils/structeredResponse.js";
+  structuredResponse,
+  structuredResponseCompare,
+} from "../utils/structuredResponse.js";
 import { textOnly } from "../utils/textOnly.js";
 import {
   formatSuccessResponse,
   formatErrorResponse,
-} from "./../utils/responseHandler.js";
+} from "../utils/responseHandler.js";
 import { logger } from "../utils/logger.js";
 import { saveRequestHistory } from "../db/dbService.js";
 import { marked } from "marked";
@@ -127,7 +127,7 @@ export const explainCode = async (req, res) => {
 
     const prompt = `Please analyze the following ${language} code and provide a detailed code review. Include overview, line-by-line explanation, and best practices for each file.`;
 
-    const response = await structeredResponse(prompt, codeToExplain);
+    const response = await structuredResponse(prompt, codeToExplain);
 
     await saveRequestHistory({
       userID: null,
@@ -161,7 +161,7 @@ export const fixCode = async (req, res) => {
       issue ? ` that has this issue: ${issue}` : ""
     }. If multiple files are provided, analyze and fix issues in each file. Provide a detailed analysis of issues and necessary fixes.`;
 
-    const response = await structeredResponse(prompt, codeToFix);
+    const response = await structuredResponse(prompt, codeToFix);
 
     await saveRequestHistory({
       userID: null,
@@ -189,7 +189,7 @@ export const compareCode = async (req, res) => {
   try {
     const { oldCode, newCode } = req.body;
     const prompt = `Compare the following two code snippets and provide a detailed analysis of the differences:\n\nOld Code:\n${oldCode}\n\nNew Code:\n${newCode}`;
-    const response = await structeredResponseCompare(prompt, oldCode, newCode);
+    const response = await structuredResponseCompare(prompt, oldCode, newCode);
 
     const result = {
       content: response,

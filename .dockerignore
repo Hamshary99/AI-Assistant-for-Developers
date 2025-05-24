@@ -1,0 +1,28 @@
+# Dependency directories
+node_modules/
+npm-debug.log*
+
+# Environment files
+.env
+.env.*
+
+# Version control
+.git
+.gitignore
+
+# IDE files
+.vscode/
+*.swp
+*.swo
+
+# Build output
+dist/
+build/
+
+# Logs
+logs/
+*.log
+
+# System Files
+.DS_Store
+Thumbs.db

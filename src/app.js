@@ -5,7 +5,6 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import expressLayouts from "express-ejs-layouts";
-import rateLimit from "express-rate-limit";
 
 import { appConfig } from "./config/appConfig.js";
 import router from "./router/route.js";
@@ -38,7 +37,7 @@ app.set("views", path.join(__dirname, "views"));
 app.use(expressLayouts);
 app.set("layout", "layouts/main");
 
-// Serve static files
+// Serve static files from src/public
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use(express.json());

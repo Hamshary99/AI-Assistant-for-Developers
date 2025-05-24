@@ -83,6 +83,16 @@ const copyToClipboard = async (text) => {
   }
 };
 
+// Add this helper function after the existing utility functions
+const safelyUpdateContent = (selector, content) => {
+  const element = document.querySelector(selector);
+  if (element) {
+    element.textContent = content;
+  } else {
+    console.warn(`Element not found: ${selector}`);
+  }
+};
+
 // File handling functions
 const updateFileList = (fileInput) => {
   const fileList = fileInput.closest("form").querySelector(".file-list");
@@ -458,6 +468,11 @@ const handleExplainForm = async (e) => {
   const code = document.getElementById("code").value;
   const language = document.getElementById("language").value;
   const fileInput = document.getElementById("codeFile");
+  const output = document.getElementById("result");
+  if (!output) {
+    console.error("Result element not found");
+    return;
+  }
 
   showLoading();
   try {
@@ -487,27 +502,28 @@ const handleExplainForm = async (e) => {
 
     const data = await response.json();
     const result = data.data.content;
-    const output = document.getElementById("result");
 
-    output.querySelector(".overview-content").textContent = result.overview;
+    safelyUpdateContent(".overview-content", result.overview);
 
     const lineReviewsContent = output.querySelector(".line-reviews-content");
-    lineReviewsContent.innerHTML = result.line_reviews
-      .map(
-        (review) => `
-        <div class="review-item ${review.review_type}">
-          <span class="line-number">Line ${review.line}:</span>
-          <span class="review-text">${review.review}</span>
-        </div>
-      `
-      )
-      .join("");
+    if (lineReviewsContent) {
+      lineReviewsContent.innerHTML = result.line_reviews
+        .map(
+          (review) => `
+          <div class="review-item ${review.review_type}">
+            <span class="line-number">Line ${review.line}:</span>
+            <span class="review-text">${review.review}</span>
+          </div>
+        `
+        )
+        .join("");
+    }
 
     const udiffContent = output.querySelector(".udiff-content");
-    if (result.udiff) {
+    if (udiffContent && result.udiff) {
       renderUnifiedDiff(result.udiff, udiffContent.parentElement);
       udiffContent.parentElement.parentElement.style.display = "block";
-    } else {
+    } else if (udiffContent) {
       udiffContent.parentElement.parentElement.style.display = "none";
     }
 
@@ -610,42 +626,31 @@ const handleCompareForm = async (e) => {
   const output = document.getElementById("result");
   const outputSection = document.querySelector(".output-section");
 
+  if (!output) {
+    console.error("Result element not found");
+    return;
+  }
+
+  const overviewContent = output.querySelector(".overview-content");
+  const lineReviewsContent = output.querySelector(".line-reviews-content");
+  const udiffContent = output.querySelector(".udiff-content");
+
+  if (!overviewContent || !lineReviewsContent || !udiffContent) {
+    console.error("Required output elements not found");
+    return;
+  }
+
   showLoading();
 
   try {
     const formData = new FormData();
-    const oldCodeFiles = document.getElementById("oldCodeFile").files;
-    const newCodeFiles = document.getElementById("newCodeFile").files;
-
-    // Add text inputs if provided
     formData.append("oldCode", oldCode);
     formData.append("newCode", newCode);
 
-    // Add old code files
-    for (let i = 0; i < oldCodeFiles.length; i++) {
-      formData.append("files", oldCodeFiles[i]);
-    }
-
-    // Add new code files
-    for (let i = 0; i < newCodeFiles.length; i++) {
-      formData.append("files", newCodeFiles[i]);
-    }
-
-    const response = await fetch("/api/compare-code", {
-      method: "POST",
-      body: formData,
+    const data = await handleApiRequest("/api/compare-code", "POST", {
+      oldCode,
+      newCode,
     });
-
-    if (!response.ok) {
-      const errorResponse = await response.json();
-      throw {
-        message: errorResponse.message,
-        response: response,
-        details: errorResponse.details,
-      };
-    }
-
-    const data = await response.json();
 
     if (!data.success) {
       throw new Error(data.message || "Failed to compare code");
@@ -653,9 +658,8 @@ const handleCompareForm = async (e) => {
 
     const result = data.data.content;
 
-    output.querySelector(".overview-content").textContent = result.overview;
+    overviewContent.textContent = result.overview;
 
-    const lineReviewsContent = output.querySelector(".line-reviews-content");
     lineReviewsContent.innerHTML = result.line_reviews
       .map(
         (review) => `
@@ -667,15 +671,26 @@ const handleCompareForm = async (e) => {
       )
       .join("");
 
-    const udiffContent = output.querySelector(".udiff-content");
-    if (result.udiff) {
-      renderUnifiedDiff(result.udiff, udiffContent.parentElement);
-      udiffContent.parentElement.parentElement.style.display = "block";
-    } else {
+    // Check if we have a udiff and the parent elements exist before rendering
+    if (result.udiff && udiffContent && udiffContent.parentElement) {
+      const udiffContainer = udiffContent.parentElement.parentElement;
+      try {
+        renderUnifiedDiff(result.udiff, udiffContent.parentElement);
+        if (udiffContainer) {
+          udiffContainer.style.display = "block";
+        }
+      } catch (diffError) {
+        console.error("Error rendering diff:", diffError);
+        if (udiffContainer) {
+          udiffContainer.style.display = "none";
+        }
+      }
+    } else if (udiffContent.parentElement && udiffContent.parentElement.parentElement) {
       udiffContent.parentElement.parentElement.style.display = "none";
     }
 
     hideLoading();
+    outputSection.style.display = "block";
 
     showNotification({
       title: "Success",

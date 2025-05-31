@@ -4,11 +4,9 @@ services:
   node_app:
     build:
       context: .
-      target: prod
-    environment:
-      - NODE_ENV=production
-      - MONGODB_URI=mongodb://mongo:27017/ai_assistant
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-    volumes:
-      - /app/node_modules  # Anonymous volume to prevent node_modules from being overwritten
-    command: ["node", "src/app.js"]  # Direct node command instead of npm for production
+      target: production
+      environment:
+        - NODE_ENV=production
+        - MONGODB_URI=mongodb://mongo:27017/ai_assistant
+        - GEMINI_API_KEY=${GEMINI_API_KEY}
+    command: npm start

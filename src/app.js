@@ -12,22 +12,22 @@ import { logger, requestLogger } from "./utils/logger.js";
 import { connectToDatabase } from "./db/dbService.js";
 import webRouter from "./router/webRoute.js";
 import { handleApiError } from "./utils/errorHandler.js";
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 5000;
-dotenv.config();
 const app = express();
 
 // Import and apply the API rate limiter middleware
 import { apiRateLimiter } from "./middleware/rateLimiter.js";
-app.use(apiRateLimiter);
+
+app.use("/api", apiRateLimiter);
 // Middleware
 app.use(
   cors({
     origin: appConfig.corsConfig.origin,
     methods: appConfig.corsConfig.methods,
-    allowedHeaders: ["Content-Type", "application/json"],
   })
 );
 
@@ -41,6 +41,14 @@ app.set("layout", "layouts/main");
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use(express.json());
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    return res.status(400).json({ error: "Invalid JSON in request body" });
+  }
+  next(err);
+});
+
+
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Add request logging middleware
@@ -74,42 +82,28 @@ app.get("/health", (req, res) =>
 );
 
 // API error handling
-app.use("/api", (err, req, res, next) => {
+app.use("/", (err, req, res, next) => {
   handleApiError(err, req, res);
 });
 
-// General error handling middleware
-app.use((err, req, res, next) => {
-  logger.error("Unhandled error:", err);
-
-  // Handle API errors differently from web page errors
-  if (req.path.startsWith("/api/")) {
-    return handleApiError(err, req, res);
-  }
-
-  // For web pages, render the error view
-  res.status(err.statusCode || 500).render("error", {
-    title: "Error",
-    message: err.message || "An unexpected error occurred.",
-    activePage: "", // Add empty string for error pages
-  });
-});
-
-// Handle 404
-app.use((req, res) => {
-  if (req.path.startsWith("/api/")) {
-    return res.status(404).json({
-      success: false,
-      message: "API endpoint not found",
-      timestamp: new Date().toISOString(),
+// Global error handler
+app.use((error, req, res, next) => {
+  error.statusCode = error.statusCode || 500;
+  error.status = error.status || "error";
+  if (error.statusCode == 404) {
+    return res.status(404).render("error", {
+      title: "Page Not Found",
+      message: "The page you are looking for does not exist.",
+      activePage: "", // Add empty string for 404 pages
     });
   }
 
-  res.status(404).render("error", {
-    title: "Page Not Found",
-    message: "The page you are looking for does not exist.",
-    activePage: "", // Add empty string for 404 pages
+  res.status(error.statusCode).json({
+    status: error.statusCode || 500,
+    message: error.message || "Internal Server Error",
+    error: process.env.NODE_ENV === "development" ? error : {}, // Only show error details in development
   });
+
 });
 
 console.log("Using Gemini API Key: ", !!process.env.GEMINI_API_KEY);

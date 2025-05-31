@@ -1,32 +1,34 @@
 export class ApiError extends Error {
-  constructor(message, statusCode = 500, details = null) {
-    super(message);
+  constructor(message, statusCode) {
+    super(message); // calls the parent constructor with the error message
     this.statusCode = statusCode;
-    this.details = details;
-    this.name = "ApiError";
+    this.name = "ApiError"; // sets the name of the error
   }
 }
 
 export const handleApiError = (err, req, res) => {
-  console.error("API Error:", err);
+  console.error(`[${new Date().toISOString()}]`, err);
 
-  if (err instanceof ApiError) {
-    return res.status(err.statusCode).json({
-      success: false,
-      message: err.message,
-      details: err.details,
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  // Default error response for unhandled errors
-  return res.status(500).json({
-    success: false,
-    message: "An unexpected error occurred",
+  const errStatusCode = err.statusCode || 500;
+  return res.status(errStatusCode).json({
+    status: errStatusCode,
+    message: err.message || "Internal Server Error",
     timestamp: new Date().toISOString(),
   });
 };
 
-export const asyncHandler = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch((err) => next(err));
-};
+
+// export const handleDbError = (err, req, res) => {
+//   console.error("Database Error:", err);
+//   const errorResponse = {
+//     status: 500,
+//     message: "Database Error",
+//     timestamp: new Date().toISOString(),
+//   };
+
+//   // Log the error details for debugging
+//   console.error("Error details:", errorResponse);
+
+//   // Send a generic error response
+//   return res.status(500).json(errorResponse);
+// };

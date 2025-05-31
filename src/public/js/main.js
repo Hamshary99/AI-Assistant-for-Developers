@@ -199,8 +199,8 @@ const renderCustomDiff = (udiff, container) => {
   container.innerHTML = "";
 
   if (!udiff) {
-    container.innerHTML = "<p>No changes required</p>";
-    return;
+    container.innerHTML = "<p>No differences found</p>";
+    return container;
   }
 
   // Create a new container for the diff
@@ -218,7 +218,7 @@ const renderCustomDiff = (udiff, container) => {
       !line.startsWith("@@")
   );
 
-  let inModifiedSection = false;
+  let lineNumber = 1;
   let outputContent = "";
 
   for (let i = startIndex; i < lines.length; i++) {
@@ -226,29 +226,21 @@ const renderCustomDiff = (udiff, container) => {
     if (!line.trim() || line.startsWith("@@")) continue;
 
     const lineContent = line.substring(1).trimEnd(); // Remove the first character and trailing spaces
+    const prefix = line[0]; // Get the first character (-, +, or space)
+    const classes = 
+      prefix === '-' ? 'removed' :
+      prefix === '+' ? 'added' : 
+      'unchanged';
 
-    if (line.startsWith("-")) {
-      inModifiedSection = true;
-      // Skip removed lines
-    } else if (line.startsWith("+")) {
-      outputContent += `<div class="code-line added">
-        <code>${escapeHtml(lineContent)}</code>
-        ${
-          inModifiedSection
-            ? '<span class="inline-comment">← Fixed: This line was modified</span>'
-            : ""
-        }
-      </div>`;
-      inModifiedSection = false;
-    } else {
-      outputContent += `<div class="code-line unchanged">
-        <code>${escapeHtml(lineContent)}</code>
-      </div>`;
-    }
+    outputContent += `<div class="code-line ${classes}">
+      <span class="code-line-number">${prefix === ' ' ? lineNumber++ : prefix}</span>
+      <code>${escapeHtml(lineContent)}</code>
+    </div>`;
   }
 
   diffContainer.innerHTML = outputContent;
   container.appendChild(diffContainer);
+  return container;
 };
 
 // Helper function to escape HTML
@@ -373,28 +365,57 @@ const handleFormError = async (error, response) => {
 };
 
 const handleApiRequest = async (url, method, data) => {
-  const response = await fetch(url, {
-    method: method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+  const isFormData = data instanceof FormData;
 
-  if (!response.ok) {
+  try {
+    const response = await fetch(url, {
+      method: method,
+      credentials: "same-origin",
+      headers: isFormData
+        ? {
+            Accept: "application/json",
+          }
+        : {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+      body: isFormData ? data : JSON.stringify(data),
+    });
+
+    let responseData;
+    const contentType = response.headers.get("content-type");
+
+    try {
+      responseData =
+        contentType && contentType.includes("application/json")
+          ? await response.json()
+          : { success: false, message: await response.text() };
+    } catch (parseError) {
+      console.error("Failed to parse response:", parseError);
+      throw {
+        message: "Invalid response from server",
+        response: response,
+      };
+    }
+
+    if (!response.ok || response.status !== 200) {
+      throw {
+        message: responseData.message || response.statusText,
+        response: response,
+      };
+    }
+
+    return responseData;
+  } catch (error) {
+    // If it's already formatted as we want, throw it as is
+    if (error.response) throw error;
+
+    // Otherwise, format it properly
     throw {
-      message: response.statusText,
-      response: response,
+      message: error.message || "Unknown error occurred",
+      response: null,
     };
   }
-
-  const responseData = await response.json();
-  if (!responseData.success) {
-    throw {
-      message: responseData.message,
-      response: response,
-    };
-  }
-
-  return responseData;
 };
 
 const handleReadmeForm = async (e) => {
@@ -407,11 +428,23 @@ const handleReadmeForm = async (e) => {
     const data = await handleApiRequest("/api/generate-readme", "POST", {
       projectDescription: description,
     });
-    resultDiv.innerHTML = marked.parse(data.data.content);
-    resultDiv.dataset.markdown = data.data.content;
+    // console.log("Received data:", data);
+
+    // Extract the markdown content from the correct path in the response
+    const markdownContent = data.content.result;
+
+    if (!markdownContent) {
+      throw new Error("No content received from server");
+    }
+
+    // Wrap the markdown content in a styled container
+    resultDiv.innerHTML = `<div class="markdown-body">${marked.parse(
+      markdownContent
+    )}</div>`;
+    resultDiv.dataset.markdown = markdownContent;
 
     document.getElementById("downloadBtn").onclick = () => {
-      downloadMarkdown(data.data.content);
+      downloadMarkdown(markdownContent);
     };
 
     hideLoading();
@@ -443,7 +476,7 @@ const handleApiForm = async (e) => {
     });
 
     // Parse the API response content
-    const content = data.data.content;
+    const content = data.content;
     const sections = parseApiContent(content);
 
     // Generate the formatted HTML
@@ -486,59 +519,61 @@ const handleExplainForm = async (e) => {
       });
     }
 
-    const response = await fetch("/api/explain-code", {
-      method: "POST",
-      body: formData,
-    });
+    const data = await handleApiRequest("/api/explain-code", "POST", formData);
 
-    if (!response.ok) {
-      const errorResponse = await response.json();
-      throw {
-        message: errorResponse.message,
-        response: response,
-        details: errorResponse.details,
-      };
-    }
+    const result = data.content;
 
-    const data = await response.json();
-    const result = data.data.content;
-
-    safelyUpdateContent(".overview-content", result.overview);
-
-    const lineReviewsContent = output.querySelector(".line-reviews-content");
-    if (lineReviewsContent) {
-      lineReviewsContent.innerHTML = result.line_reviews
-        .map(
-          (review) => `
-          <div class="review-item ${review.review_type}">
-            <span class="line-number">Line ${review.line}:</span>
-            <span class="review-text">${review.review}</span>
+    // Update UI with results
+    output.innerHTML = `
+      <div class="explanation-section">
+        <h3>Overview</h3>
+        <div class="overview-content">${marked.parse(result.overview)}</div>
+        
+        <h3>Line-by-Line Review</h3>
+        <div class="line-reviews-content">
+          ${result.line_reviews
+            .map(
+              (review) => `
+            <div class="review-item ${review.review_type}">
+              <span class="line-number">Line ${review.line}:</span>
+              <span class="review-text">${marked.parse(review.review)}</span>
+            </div>
+          `
+            )
+            .join("")}
+        </div>
+        ${
+          result.udiff
+            ? `
+          <h3>Changes</h3>
+          <div class="udiff-section">
+            <div class="udiff-content"></div>
           </div>
         `
-        )
-        .join("");
-    }
+            : ""
+        }
+      </div>
+    `;
 
-    const udiffContent = output.querySelector(".udiff-content");
-    if (udiffContent && result.udiff) {
-      renderUnifiedDiff(result.udiff, udiffContent.parentElement);
-      udiffContent.parentElement.parentElement.style.display = "block";
-    } else if (udiffContent) {
-      udiffContent.parentElement.parentElement.style.display = "none";
+    // If there's a udiff, render it
+    if (result.udiff) {
+      const udiffContent = output.querySelector(".udiff-content");
+      renderCustomDiff(result.udiff, udiffContent.parentElement);
     }
 
     hideLoading();
+    output.style.display = "block";
 
     showNotification({
       title: "Success",
-      message: "Code explanation generated successfully",
+      message: "Code explained successfully",
       type: "success",
       duration: 3000,
     });
   } catch (error) {
     const { html } = await handleFormError(error, error.response);
-    document.getElementById("result").innerHTML = html;
-    document.querySelector(".output-section").style.display = "block";
+    output.innerHTML = html;
+    output.style.display = "block";
   }
 };
 
@@ -559,49 +594,53 @@ const handleFixForm = async (e) => {
     formData.append("issue", issue);
     formData.append("language", language);
 
-    // Add all files
     if (fileInput && fileInput.files) {
       Array.from(fileInput.files).forEach((file) => {
         formData.append("files", file);
       });
     }
 
-    const response = await fetch("/api/fix-code", {
-      method: "POST",
-      body: formData,
-    });
+    const data = await handleApiRequest("/api/fix-code", "POST", formData);
 
-    if (!response.ok) {
-      const errorResponse = await response.json();
-      throw {
-        message: errorResponse.message,
-        response: response,
-        details: errorResponse.details,
-      };
-    }
+    const result = data.content;
 
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(data.message || "Failed to fix code");
-    }
+    // Update UI with results
+    output.innerHTML = `
+      <div class="fixing-section">
+        <h3>Overview</h3>
+        <div class="overview-content">${marked.parse(result.overview)}</div>
 
-    const result = data.data.content;
-    output.querySelector(".overview-content").textContent = result.overview;
-
-    const lineReviewsContent = output.querySelector(".line-reviews-content");
-    lineReviewsContent.innerHTML = result.line_reviews
-      .map(
-        (review) => `
-        <div class="review-item ${review.review_type}">
-          <span class="line-number">Line ${review.line}:</span>
-          <span class="review-text">${review.review}</span>
+        <h3>Line-by-Line Fix</h3>
+        <div class="line-reviews-content">
+          ${result.line_reviews
+            .map(
+              (review) => `
+            <div class="review-item ${review.review_type}">
+              <span class="line-number">Line ${review.line}:</span>
+              <span class="review-text">${marked.parse(review.review)}</span>
+            </div>
+          `
+            )
+            .join("")}
         </div>
-      `
-      )
-      .join("");
+        ${
+          result.udiff
+            ? `
+          <h3>Changes</h3>
+          <div class="udiff-section">
+            <div class="udiff-content"></div>
+          </div>
+        `
+            : ""
+        }
+      </div>
+    `;
 
-    const udiffContent = output.querySelector(".udiff-content");
-    renderCustomDiff(result.udiff, udiffContent.parentElement);
+    // If there's a udiff, render it
+    if (result.udiff) {
+      const udiffContent = output.querySelector(".udiff-content");
+      renderCustomDiff(result.udiff, udiffContent.parentElement);
+    }
 
     hideLoading();
     outputSection.style.display = "block";
@@ -621,6 +660,7 @@ const handleFixForm = async (e) => {
 
 const handleCompareForm = async (e) => {
   e.preventDefault();
+
   const oldCode = document.getElementById("oldCode").value;
   const newCode = document.getElementById("newCode").value;
   const output = document.getElementById("result");
@@ -631,77 +671,125 @@ const handleCompareForm = async (e) => {
     return;
   }
 
-  const overviewContent = output.querySelector(".overview-content");
-  const lineReviewsContent = output.querySelector(".line-reviews-content");
-  const udiffContent = output.querySelector(".udiff-content");
-
-  if (!overviewContent || !lineReviewsContent || !udiffContent) {
-    console.error("Required output elements not found");
+  if (!oldCode.trim() || !newCode.trim()) {
+    showNotification({
+      title: "Error",
+      message: "Please provide both versions of code to compare",
+      type: "error",
+      duration: 3000,
+    });
     return;
   }
 
   showLoading();
 
   try {
-    const formData = new FormData();
-    formData.append("oldCode", oldCode);
-    formData.append("newCode", newCode);
-
+    // Make API request to get analysis
     const data = await handleApiRequest("/api/compare-code", "POST", {
       oldCode,
       newCode,
     });
 
-    if (!data.success) {
-      throw new Error(data.message || "Failed to compare code");
-    }
-
-    const result = data.data.content;
-
-    overviewContent.textContent = result.overview;
-
-    lineReviewsContent.innerHTML = result.line_reviews
-      .map(
-        (review) => `
-        <div class="review-item ${review.review_type}">
-          <span class="line-number">Line ${review.line}:</span>
-          <span class="review-text">${review.review}</span>
+    const result = data.content;
+    
+    // Update UI with side-by-side comparison
+    output.innerHTML = `
+      <div class="code-comparison">
+        <div class="code-panel">
+          <h3>Original Version</h3>
+          <div class="code-content original"></div>
         </div>
-      `
-      )
-      .join("");
+        <div class="code-panel">
+          <h3>New Version</h3>
+          <div class="code-content modified"></div>
+        </div>
+        ${result.overview ? `
+          <div class="analysis-section">
+            <h3>Overview</h3>
+            <div class="analysis-content">${marked.parse(result.overview)}</div>
+          </div>
+        ` : ""}
+      </div>
+    `;
 
-    // Check if we have a udiff and the parent elements exist before rendering
-    if (result.udiff && udiffContent && udiffContent.parentElement) {
-      const udiffContainer = udiffContent.parentElement.parentElement;
-      try {
-        renderUnifiedDiff(result.udiff, udiffContent.parentElement);
-        if (udiffContainer) {
-          udiffContainer.style.display = "block";
-        }
-      } catch (diffError) {
-        console.error("Error rendering diff:", diffError);
-        if (udiffContainer) {
-          udiffContainer.style.display = "none";
-        }
-      }
-    } else if (udiffContent.parentElement && udiffContent.parentElement.parentElement) {
-      udiffContent.parentElement.parentElement.style.display = "none";
-    }
+    // Render the code in both panels with line numbers
+    const originalPanel = output.querySelector(".code-content.original");
+    const modifiedPanel = output.querySelector(".code-content.modified");
+
+    // Split code into lines
+    const originalLines = oldCode.split("\n");
+    const modifiedLines = newCode.split("\n");
+
+    originalPanel.innerHTML = originalLines.map((line, index) => `
+      <div class="code-line unchanged">
+        <span class="code-line-number">${index + 1}</span>
+        <code>${escapeHtml(line)}</code>
+      </div>
+    `).join("");
+
+    modifiedPanel.innerHTML = modifiedLines.map((line, index) => `
+      <div class="code-line unchanged">
+        <span class="code-line-number">${index + 1}</span>
+        <code>${escapeHtml(line)}</code>
+      </div>
+    `).join("");
+
+    // Highlight differences
+    highlightDifferences(originalPanel, modifiedPanel, result.udiff);
 
     hideLoading();
     outputSection.style.display = "block";
 
     showNotification({
-      title: "Success",
-      message: "Code comparison completed successfully",
+      title: "Success", 
+      message: "Code comparison complete",
       type: "success",
       duration: 3000,
     });
   } catch (error) {
-    const { html } = await handleFormError(error, error.response);
+    const { html } = await handleFormError(error);
     output.innerHTML = html;
     outputSection.style.display = "block";
+  }
+};
+
+const highlightDifferences = (originalPanel, modifiedPanel, udiff) => {
+  if (!udiff) return;
+
+  const lines = udiff.split("\n");
+
+  // Skip file headers and hunks
+  const startIndex = lines.findIndex(line => 
+    !line.startsWith("---") && 
+    !line.startsWith("+++") && 
+    !line.startsWith("@@")
+  );
+
+  let originalLineNum = 1;
+  let modifiedLineNum = 1;
+
+  for (let i = startIndex; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim() || line.startsWith("@@")) continue;
+
+    const prefix = line[0]; // Get the first character (-, +, or space)
+
+    if (prefix === "-") {
+      const originalLine = originalPanel.querySelector(`.code-line:nth-child(${originalLineNum})`);
+      if (originalLine) {
+        originalLine.className = "code-line removed";
+      }
+      originalLineNum++;
+    } else if (prefix === "+") {
+      const modifiedLine = modifiedPanel.querySelector(`.code-line:nth-child(${modifiedLineNum})`);
+      if (modifiedLine) {
+        modifiedLine.className = "code-line added";
+      }
+      modifiedLineNum++;
+    } else {
+      originalLineNum++;
+      modifiedLineNum++;
+    }
   }
 };
 
@@ -783,6 +871,15 @@ const setupMobileNav = () => {
 
 // Initialize all functionality
 document.addEventListener("DOMContentLoaded", () => {
+  // Configure marked.js for simple text rendering
+  marked.setOptions({
+    headerPrefix: "", // Don't add IDs to headers
+    mangle: false, // Don't add IDs to headings
+    headerIds: false, // Don't add IDs to headers
+    gfm: true,
+    breaks: true,
+  });
+
   // Setup form handlers
   const readmeForm = document.getElementById("readme-form");
   const apiForm = document.getElementById("api-form");

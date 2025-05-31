@@ -3,14 +3,9 @@ import {
   structuredResponseCompare,
 } from "../utils/structuredResponse.js";
 import { textOnly } from "../utils/textOnly.js";
-import {
-  formatSuccessResponse,
-  formatErrorResponse,
-} from "../utils/responseHandler.js";
-import { logger } from "../utils/logger.js";
 import { saveRequestHistory } from "../db/dbService.js";
 import { marked } from "marked";
-import upload from "../middleware/filesReader.js";
+import { handleApiError } from "../utils/errorHandler.js";
 
 const getFileContent = (req) => {
   if (req.files && req.files.length > 0) {
@@ -44,20 +39,13 @@ export const generateReadme = async (req, res) => {
       responseRaw: response.result,
     });
 
-    res.status(200).json(
-      formatSuccessResponse(
-        {
-          content: response.result,
-          requestType: "generateReadme",
-          timeStamp: new Date().toISOString(),
-        },
-        "README generated successfully"
-      )
-    );
+    return res.status(200).json({
+      requestType: "Generate README",
+      timeStamp: new Date().toISOString(),
+      content: response,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json(formatErrorResponse(error, "Failed to generate README"));
+    return handleApiError(error, req, res);
   }
 };
 
@@ -71,8 +59,7 @@ Format your response using this exact structure:
 
 **Method:** ${method}
 **Path:** <endpoint-path>
-
-Parameters:
+**Parameters:**
 * \`parameter-name\` (type) - Description. Add '(Required)' for required parameters.
 
 ${
@@ -104,18 +91,13 @@ Include detailed descriptions and validation requirements.`;
       responseRaw: response.result,
     });
 
-    res.status(200).json(
-      formatSuccessResponse(
-        {
-          content: response.result,
-          requestType: "suggestApi",
-          timeStamp: new Date().toISOString(),
-        },
-        "API suggestion generated successfully"
-      )
-    );
+    return res.status(200).json({
+      requestType: "Suggest Api",
+      timeStamp: new Date().toISOString(),
+      content: response,
+    });
   } catch (error) {
-    res.status(500).json(formatErrorResponse(error, "Failed to suggest API"));
+    return handleApiError(error, req, res);
   }
 };
 
@@ -124,10 +106,16 @@ export const explainCode = async (req, res) => {
     const { code, language } = req.body;
     const fileContent = getFileContent(req);
     const codeToExplain = fileContent || code;
+    const programmingLanguage = language || "";
 
-    const prompt = `Please analyze the following ${language} code and provide a detailed code review. Include overview, line-by-line explanation, and best practices for each file.`;
+    const prompt = `Please analyze the following ${programmingLanguage} code and provide a detailed code review. 
+    Include overview, line-by-line explanation, and best practices for each file.`;
 
-    const response = await structuredResponse(prompt, codeToExplain);
+    let response = await structuredResponse(prompt, codeToExplain);
+
+    if (response.Error) {
+      throw new Error(response.Error);
+    }
 
     await saveRequestHistory({
       userID: null,
@@ -136,18 +124,13 @@ export const explainCode = async (req, res) => {
       responseStructured: response,
     });
 
-    res.status(200).json(
-      formatSuccessResponse(
-        {
-          content: response,
-          requestType: "explainCode",
-          timeStamp: new Date().toISOString(),
-        },
-        "Code explanation generated successfully"
-      )
-    );
+    return res.status(200).json({
+      requestType: "Explain Code",
+      timeStamp: new Date().toISOString(),
+      content: response,
+    });
   } catch (error) {
-    res.status(500).json(formatErrorResponse(error, "Failed to explain code"));
+    return handleApiError(error, req, res);
   }
 };
 
@@ -156,8 +139,9 @@ export const fixCode = async (req, res) => {
     const { code, issue, language } = req.body;
     const fileContent = getFileContent(req);
     const codeToFix = fileContent || code;
+    const programmingLanguage = language || "";
 
-    const prompt = `Review and fix the following ${language} code${
+    const prompt = `Review and fix the following ${programmingLanguage} code${
       issue ? ` that has this issue: ${issue}` : ""
     }. If multiple files are provided, analyze and fix issues in each file. Provide a detailed analysis of issues and necessary fixes.`;
 
@@ -170,18 +154,13 @@ export const fixCode = async (req, res) => {
       responseStructured: response,
     });
 
-    res.status(200).json(
-      formatSuccessResponse(
-        {
-          content: response,
-          requestType: "fixCode",
-          timeStamp: new Date().toISOString(),
-        },
-        "Code fixed successfully"
-      )
-    );
+    return res.status(200).json({
+      requestType: "Fix code",
+      timeStamp: new Date().toISOString(),
+      content: response,
+    });
   } catch (error) {
-    res.status(500).json(formatErrorResponse(error, "Failed to fix code"));
+    return handleApiError(error, req, res);
   }
 };
 
@@ -204,13 +183,13 @@ export const compareCode = async (req, res) => {
       responseStructured: result,
     });
 
-    return res
-      .status(200)
-      .json(
-        formatSuccessResponse(result, "Code comparison completed successfully")
-      );
+    return res.status(200).json({
+      requestType: "Compare code",
+      timeStamp: new Date().toISOString(),
+      content: response,
+    });
   } catch (error) {
-    res.status(500).json(formatErrorResponse(error, "Failed to compare code"));
+    return handleApiError(error, req, res);
   }
 };
 
@@ -222,20 +201,18 @@ export const getUserRequestHistory = async (req, res) => {
     const history = await getUserHistory(limit);
 
     if (!history || history.length === 0) {
-      return res.status(200).json(
-        formatSuccessResponse(
-          {
-            history: [],
-            count: 0,
-          },
-          "No history found"
-        )
-      );
+      return res.status(200).json({
+        requestType: "Get User History",
+        timeStamp: new Date().toISOString(),
+        content: {
+          history: [],
+          count: 0,
+        },
+      });
     }
 
     // Format history data with markdown
     const formattedHistory = history.map((item) => {
-      const timestamp = new Date(item.timeStamp).toLocaleString();
       let content = "";
 
       // Format response based on request type and content
@@ -287,8 +264,7 @@ export const getUserRequestHistory = async (req, res) => {
       marked: marked,
     });
   } catch (error) {
-    logger.error("Error retrieving user history", error);
-    res.status(500).render("error", {
+    res.status(error.statusCode || 500).render("error", {
       title: "Error",
       message: "Failed to retrieve history",
       activePage: "",

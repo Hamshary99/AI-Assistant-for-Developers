@@ -1,4 +1,3 @@
-
 const LOG_LEVELS = {
   INFO: "INFO",
   WARN: "WARN",
@@ -7,7 +6,7 @@ const LOG_LEVELS = {
 };
 
 // Base logger function
-const log = (level, message, data = null) => {
+const log = (level, message, data) => {
   const timestamp = new Date().toISOString();
   const logEntry = {
     timestamp,
@@ -22,46 +21,34 @@ const log = (level, message, data = null) => {
   return logEntry;
 };
 
-
 // Logger methods for different levels
 export const logger = {
   info: (message, data) => log(LOG_LEVELS.INFO, message, data),
   warn: (message, data) => log(LOG_LEVELS.WARN, message, data),
   error: (message, data) => log(LOG_LEVELS.ERROR, message, data),
-  debug: (message, data) => log(LOG_LEVELS.DEBUG, message, data)
+  debug: (message, data) => log(LOG_LEVELS.DEBUG, message, data),
 };
 
-
-// Middleware for request logging
 // Middleware for request logging
 export const requestLogger = (req, res, next) => {
   const startTime = Date.now();
-  
-  // Log request
-  logger.info(`Incoming ${req.method} request to ${req.originalUrl}`, {
+
+  logger.info(`${req.method} ${req.originalUrl}`, {
     method: req.method,
-    path: req.originalUrl,
-    body: req.body,
-    query: req.query,
-    params: req.params,
-    headers: req.headers
+    url: req.originalUrl,
+    ip: req.ip,
   });
 
-  // Capture response
-  const originalSend = res.send;
-  res.send = function(body) {
-    const responseTime = Date.now() - startTime;
-    
-    // Log response (but don't log full body for large responses)
-    logger.info(`Response sent for ${req.method} ${req.originalUrl}`, {
-      statusCode: res.statusCode,
-      responseTime: `${responseTime}ms`,
-      contentLength: Buffer.from(body).length
+  // Log response info after sending
+  res.on("finish", () => {
+    const duration = Date.now() - startTime;
+    logger.info(`${req.method} ${req.originalUrl} completed`, {
+      method: req.method,
+      url: req.originalUrl,
+      status: res.statusCode,
+      duration: `${duration}ms`,
     });
-    
-    // Call original send
-    originalSend.call(this, body);
-  };
+  });
 
   next();
 };

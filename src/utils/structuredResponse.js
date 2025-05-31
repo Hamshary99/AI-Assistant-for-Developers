@@ -23,7 +23,7 @@ export const structuredResponse = async (prompt, code) => {
   try {
     const finalPrompt = buildFinalPrompt(prompt, code);
 
-    console.log("\n\nstructuredResponse | finalPrompt", finalPrompt);
+    // console.log("\n\nstructuredResponse | finalPrompt", finalPrompt);
     // const result = await model.generateContent(promptWithExample);
     const aiResponse = await model.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
@@ -40,7 +40,7 @@ export const structuredResponse = async (prompt, code) => {
     });
 
      const result = aiResponse.response.candidates[0].content.parts[0].text;
-     console.log("textOnly | aiResponse", result);
+    //  console.log("textOnly | aiResponse", result);
 
      // Sanitize and parse
      const cleaned = result
@@ -59,7 +59,7 @@ export const structuredResponseCompare = async (prompt, oldCode, newCode) => {
   try {
     const finalPrompt = buildFinalPromptCompare(prompt, oldCode, newCode);
 
-    console.log("\n\nstructuredResponseCompare | finalPrompt", finalPrompt);
+    // console.log("\n\nstructuredResponseCompare | finalPrompt", finalPrompt);
     // const result = await model.generateContent(promptWithExample);
     const aiResponse = await model.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
@@ -76,7 +76,7 @@ export const structuredResponseCompare = async (prompt, oldCode, newCode) => {
     });
 
      const result = aiResponse.response.candidates[0].content.parts[0].text;
-     console.log(" aiResponse", result);
+    //  console.log(" aiResponse", result);
 
      // Sanitize and parse
      const cleaned = result
@@ -90,23 +90,4 @@ export const structuredResponseCompare = async (prompt, oldCode, newCode) => {
     return { Error: "Uh oh! Caught error while fetching AI response" };
   }
 };
-
-
-// async function saveResponseToFile(response) {
-//   try {
-//     const result =  response; // Pass the response parameter to textOnly
-//     const dir = import.meta.dirname;
-//     const filePath = path.join(dir, "response.json");
-
-//     // Ensure the directory exists
-//     await fs.mkdir(path.dirname(filePath), { recursive: true });
-
-//     // Write JSON to file
-//     await fs.writeFile(filePath, JSON.stringify(result, null, 2), "utf8");
-//     console.log("✅ AI response saved to response.json");
-//   } catch (error) {
-//     console.error("❌ Error saving AI response:", error);
-//   }
-// }
-
 

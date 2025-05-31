@@ -87,12 +87,11 @@ export const getUserHistory = async (limit = 10) => {
     if (!mongoose.connection.readyState) {
       logger.warn("Database connection not available, cannot retrieve history");
       return [];
-    }
-
-    // const history = await RequestHistory.find({ userId })
+    }    // const history = await RequestHistory.find({ userId })
     const history = await RequestHistory.find({})
-      .sort({ timestamp: -1 })
-      .limit(limit);
+      .sort({ timeStamp: -1 }) 
+      .limit(limit)
+      .lean(); // Convert to plain JS objects
 
     return history;
   } catch (error) {

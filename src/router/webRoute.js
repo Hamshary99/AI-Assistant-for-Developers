@@ -1,5 +1,5 @@
 import express from "express";
-import { getUserHistory } from "../db/dbService.js";
+import { getUserHistory } from "../repositories/dbManagerRepository.js";
 import { marked } from "marked";
 
 const webRouter = express.Router();

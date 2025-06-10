@@ -1,7 +1,6 @@
 import "dotenv/config";
 import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
-import { schema } from "./schema.js";
-
+import { schema } from "../models/responseSchema/responseSchema.js";
 
 export const aiConfig = {
   // These Gemini models are updated upto September 2021
@@ -10,7 +9,7 @@ export const aiConfig = {
     apiKey: process.env.GEMINI_API_KEY,
     generationConfig: {
       responseMimeType: "application/json", // Enforces JSON output
-      responseSchema: schema,               // Uses the schema above
+      responseSchema: schema, // Uses the schema above
     },
 
     // Gemini Safety Settings

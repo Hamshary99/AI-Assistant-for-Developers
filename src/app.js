@@ -8,8 +8,8 @@ import expressLayouts from "express-ejs-layouts";
 
 import { appConfig } from "./config/appConfig.js";
 import router from "./router/route.js";
-import { logger, requestLogger } from "./utils/logger.js";
-import { connectToDatabase } from "./db/dbService.js";
+import { logger, requestLogger } from "./middleware/logger.js";
+import { connectToDatabase } from "./config/dbConfig.js";
 import webRouter from "./router/webRoute.js";
 import { handleApiError } from "./utils/errorHandler.js";
 dotenv.config();
@@ -47,7 +47,6 @@ app.use((err, req, res, next) => {
   }
   next(err);
 });
-
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -90,7 +89,7 @@ app.use("/", (err, req, res, next) => {
 app.use((error, req, res, next) => {
   error.statusCode = error.statusCode || 500;
   error.status = error.status || "error";
-  if (error.statusCode == 404) {
+  if (error.statusCode === 404) {
     return res.status(404).render("error", {
       title: "Page Not Found",
       message: "The page you are looking for does not exist.",
@@ -103,7 +102,6 @@ app.use((error, req, res, next) => {
     message: error.message || "Internal Server Error",
     error: process.env.NODE_ENV === "development" ? error : {}, // Only show error details in development
   });
-
 });
 
 console.log("Using Gemini API Key: ", !!process.env.GEMINI_API_KEY);

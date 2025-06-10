@@ -1,5 +1,5 @@
 import rateLimit from "express-rate-limit";
-import { logger } from "../utils/logger.js";
+import { logger } from "./logger.js";
 
 const formatTimeLeft = (timeLeft) => {
   const seconds = Math.ceil(timeLeft / 1000);

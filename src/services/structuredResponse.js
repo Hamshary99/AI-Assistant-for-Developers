@@ -3,7 +3,7 @@ import {
   buildFinalPrompt,
   buildFinalPromptCompare,
 } from "../utils/promptHandler.js";
-
+import { AiError } from "../middleware/errorHandler.js";
 
 // This function is used for a text only model of Gemini AI
 export const structuredResponse = async (prompt, code) => {
@@ -24,6 +24,10 @@ export const structuredResponse = async (prompt, code) => {
       ],
     });
 
+    if (!aiResponse) {
+      throw new AiError("No response received from AI model", 500);
+    }
+
     const result = aiResponse.response.candidates[0].content.parts[0].text;
     //  console.log("textOnly | aiResponse", result);
 
@@ -34,8 +38,10 @@ export const structuredResponse = async (prompt, code) => {
       .trim();
     return JSON.parse(cleaned);
   } catch (error) {
-    console.error("structeredResponse | error", error);
-    return { Error: "Uh oh! Caught error while fetching AI response" };
+    throw new AiError(
+      error.message || "Failed to generate text response",
+      error.statusCode || 500
+    );
   }
 };
 
@@ -57,6 +63,10 @@ export const structuredResponseCompare = async (prompt, oldCode, newCode) => {
       ],
     });
 
+    if (!aiResponse) {
+      throw new AiError("No response received from AI model", 500);
+    }
+
     const result = aiResponse.response.candidates[0].content.parts[0].text;
     //  console.log(" aiResponse", result);
 
@@ -67,7 +77,9 @@ export const structuredResponseCompare = async (prompt, oldCode, newCode) => {
       .trim();
     return JSON.parse(cleaned);
   } catch (error) {
-    console.error("structeredResponse | error", error);
-    return { Error: "Uh oh! Caught error while fetching AI response" };
+    throw new AiError(
+      error.message || "Failed to generate text response",
+      error.statusCode || 500
+    );
   }
 };

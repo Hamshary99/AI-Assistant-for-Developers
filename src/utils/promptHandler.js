@@ -9,12 +9,14 @@ const example_object = {
       review:
         "Hardcoding API keys is insecure. Consider using environment variables or a secrets management solution.",
       review_type: "issue",
+      reviewed_line: "const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });",
     },
     {
       line: 16,
       review:
         "The code to be reviewed should be included directly in the prompt content for the LLM.",
       review_type: "suggestion",
+      reviewed_line: "const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });",
     },
   ],
   udiff: "SOME_UDIFF",

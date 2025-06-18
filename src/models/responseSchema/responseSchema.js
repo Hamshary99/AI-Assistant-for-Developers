@@ -36,12 +36,17 @@ export const schema = {
               "clarification"
             ],
           },
+          reviewed_line: {
+            description: "The line of code that was reviewed.",
+            type: "string",
+          }
         },
         required: [
           // Required fields within the item object
           "line",
           "review",
           "review_type",
+          "reviewed_line",
         ],
       },
     },

@@ -4,7 +4,9 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
+    "client": "webpack serve --config webpack.config.js --mode development --open",
+    "build:client": "webpack --config webpack.config.js --mode production"
   },
   "type": "module",
   "keywords": [],
@@ -27,9 +29,21 @@
     "mime-types": "3.0.1",
     "mongoose": "8.15.0",
     "multer": "2.0.0",
-    "zod": "^3.24.3"
+    "zod": "^3.24.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.3",
+    "bootstrap": "^5.3.3",
+    "process": "^0.11.10"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.0.2",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1",
+    "babel-loader": "^9.1.4",
+    "@babel/core": "^7.24.1",
+    "@babel/preset-env": "^7.24.1",
+    "@babel/preset-react": "^7.22.5"
   }
 }

@@ -19,4 +19,4 @@ const upload = multer({
 });
 
 
-export default upload.array("files"); 
+export default upload.any(); 

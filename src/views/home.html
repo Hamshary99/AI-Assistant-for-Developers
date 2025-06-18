@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Assistant Playground</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet" />
+  <!-- GitHub Markdown CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-light.min.css" />
+  <!-- Diff2Html CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" />
+  <!-- Highlight.js Theme -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/diff@5.1.0/dist/diff.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+</head>
+<body>
+  <div class="container py-4">
+    <h1 class="text-center mb-4">AI Assistant Playground</h1>
+
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" id="endpointTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="readme-tab" data-bs-toggle="tab" data-bs-target="#readme" type="button" role="tab">Generate README</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="suggest-tab" data-bs-toggle="tab" data-bs-target="#suggest" type="button" role="tab">Suggest API</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="explain-tab" data-bs-toggle="tab" data-bs-target="#explain" type="button" role="tab">Explain Code</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="fix-tab" data-bs-toggle="tab" data-bs-target="#fix" type="button" role="tab">Fix Code</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="compare-tab" data-bs-toggle="tab" data-bs-target="#compare" type="button" role="tab">Compare Code</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">History</button>
+      </li>
+    </ul>
+
+    <!-- Tab panes -->
+    <div class="tab-content pt-3">
+      <!-- Generate README -->
+      <div class="tab-pane fade show active" id="readme" role="tabpanel">
+        <form id="form-readme" enctype="multipart/form-data">
+          <div class="mb-3 position-relative">
+            <label class="form-label">Project Description</label>
+            <textarea class="form-control pe-5" name="projectDescription" rows="3" required placeholder="Describe your project or attach files"></textarea>
+            <input type="file" name="files" class="form-control file-input mb-2" id="readmeFiles" multiple />
+            <small class="text-muted d-block selected-files"></small>
+          </div>
+          <button class="btn btn-primary" type="submit">Submit</button>
+        </form>
+        <div id="result-readme" class="result-box"></div>
+      </div>
+
+      <!-- Suggest API -->
+      <div class="tab-pane fade" id="suggest" role="tabpanel">
+        <form id="form-suggest" enctype="multipart/form-data">
+          <div class="mb-3 position-relative">
+            <label class="form-label">Requirements</label>
+            <textarea class="form-control pe-5" name="requirements" rows="3" required placeholder="Describe requirements or attach files"></textarea>
+            <input type="file" name="files" class="form-control file-input mb-2" id="suggestFiles" multiple />
+            <small class="text-muted d-block selected-files"></small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">HTTP Method</label>
+            <select class="form-select" name="method">
+              <option>GET</option>
+              <option>POST</option>
+              <option>PUT</option>
+              <option>PATCH</option>
+              <option>DELETE</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" type="submit">Submit</button>
+        </form>
+        <div id="result-suggest" class="result-box"></div>
+      </div>
+
+      <!-- Explain Code -->
+      <div class="tab-pane fade" id="explain" role="tabpanel">
+        <form id="form-explain" enctype="multipart/form-data">
+          <div class="mb-3 position-relative">
+            <label class="form-label">Paste Code (optional)</label>
+            <textarea class="form-control pe-5" name="code" rows="6" placeholder="Paste code or attach a file"></textarea>
+            <input type="file" name="files" class="form-control file-input mb-2" id="explFiles" multiple />
+            <small class="text-muted d-block selected-files"></small>
+          </div>
+          <button class="btn btn-primary" type="submit">Submit</button>
+        </form>
+        <div id="result-explain" class="result-box"></div>
+      </div>
+
+      <!-- Fix Code -->
+      <div class="tab-pane fade" id="fix" role="tabpanel">
+        <form id="form-fix" enctype="multipart/form-data">
+          <div class="mb-3 position-relative">
+            <label class="form-label">Paste Code (optional)</label>
+            <textarea class="form-control pe-5" name="code" rows="6" placeholder="Paste code or attach a file"></textarea>
+            <input type="file" name="files" class="form-control file-input mb-2" id="fixFiles" multiple />
+            <small class="text-muted d-block selected-files"></small>
+          </div>
+          <button class="btn btn-primary" type="submit">Submit</button>
+        </form>
+        <div id="result-fix" class="result-box"></div>
+      </div>
+
+      <!-- Compare Code -->
+      <div class="tab-pane fade" id="compare" role="tabpanel">
+        <form id="form-compare" enctype="multipart/form-data">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Old Code / File</label>
+              <textarea class="form-control" name="oldCode" rows="6" placeholder="Paste old code or upload a file"></textarea>
+              <input type="file" name="oldCodeFile" class="form-control file-input mt-2" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">New Code / File</label>
+              <textarea class="form-control" name="newCode" rows="6" placeholder="Paste new code or upload a file"></textarea>
+              <input type="file" name="newCodeFile" class="form-control file-input mt-2" />
+            </div>
+          </div>
+          <button class="btn btn-primary" type="submit">Compare</button>
+        </form>
+        <div id="result-compare" class="result-box"></div>
+      </div>
+
+      <!-- History -->
+      <div class="tab-pane fade" id="history" role="tabpanel">
+        <div id="result-history" class="result-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const lastTab = localStorage.getItem('activeTab');
+      if (lastTab) {
+        const tabEl = document.getElementById(lastTab);
+        if (tabEl) new bootstrap.Tab(tabEl).show();
+      }
+      document.querySelector('#endpointTabs').addEventListener('shown.bs.tab', e => {
+        localStorage.setItem('activeTab', e.target.id);
+      });
+    });
+
+    // File input labels
+    document.querySelectorAll('input.file-input').forEach(inp => {
+      inp.addEventListener('change', () => {
+        const lbl = inp.closest('.position-relative').querySelector('.selected-files');
+        lbl.textContent = Array.from(inp.files).map(f => f.name).join(', ');
+      });
+    });
+
+    // Diff apply utility
+    const applyDiff = (orig, diffText) => {
+      if (!orig || !diffText) return '';
+      let result = [];
+      let oldIdx = 0;
+      diffText.split('\n').forEach(line => {
+        if (line.startsWith('@@')) {
+          const m = /-(\d+)/.exec(line);
+          oldIdx = m ? parseInt(m[1],10)-1 : oldIdx;
+        } else if (line.startsWith('+')) {
+          result.push(line.slice(1));
+        } else if (!line.startsWith('-')) {
+          result.push(orig[oldIdx] || '');
+          oldIdx++;
+        }
+      });
+      return result.join('\n');
+    };
+
+    // Download file utility
+    const downloadFile = (content, fileName) => {
+      const a = document.createElement('a');
+      const blob = new Blob([content], { type: 'text/markdown' });
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    };
+
+    // Clipboard copy
+    const copyToClipboard = enc => {
+      try { navigator.clipboard.writeText(atob(enc)); } catch{};
+    };
+
+    // Generic POST form helper
+    const postForm = async (form, endpoint, resultEl) => {
+      resultEl.textContent = 'Loading...';
+      try {
+        const opts = { method:'POST', body: new FormData(form) };
+        const res = await fetch(endpoint, opts);
+        const json = await res.json();
+        // Wrap in markdown-body
+        resultEl.innerHTML = `
+          <article class="markdown-body">
+            ${formatResponse(json)}
+          </article>`;
+      } catch(err) {
+        resultEl.textContent = 'Error: '+err.message;
+      }
+    };
+
+    // Custom handler for Generate README: show preview markdown
+
+    document.getElementById('form-readme')
+      .addEventListener('submit', async e => {
+        e.preventDefault();
+        const form     = e.target;
+        const resultEl = document.getElementById('result-readme');
+        resultEl.textContent = 'Loading…';
+
+        try {
+          const res  = await fetch('/api/generate-readme', {
+            method: 'POST',
+            body: new FormData(form)
+          });
+          const json = await res.json();
+          const md   = json.content?.result || '';
+          const enc  = btoa(md);
+
+          // parse to HTML
+          const html = marked.parse ? marked.parse(md) : marked(md);
+
+          // inject
+          resultEl.innerHTML = `
+            <article class="markdown-body p-4">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">README Preview</h5>
+                <div>
+                  <button class="btn btn-sm btn-outline-secondary"
+                          onclick="copyToClipboard('${enc}')">Copy Raw</button>
+                  <button class="btn btn-sm btn-success"
+                          onclick="downloadFile(atob('${enc}'), 'README.md')">Download .md</button>
+                </div>
+              </div>
+              ${html}
+            </article>`;
+
+          // if you added highlight.js
+          hljs.highlightAll();
+        } catch (err) {
+          resultEl.textContent = 'Error: ' + err.message;
+        }
+      });
+
+
+    document.getElementById('form-suggest').addEventListener('submit', e => { e.preventDefault(); postForm(e.target,'/api/suggest-api',document.getElementById('result-suggest')); });
+
+    document.getElementById('form-explain').addEventListener('submit', async e => {
+      e.preventDefault();
+      const form=e.target, el=document.getElementById('result-explain'); el.textContent='Loading...';
+      const file=form.querySelector('input#explFiles').files[0];
+      const lines = file ? (await file.text()).split(/\r?\n/) : (form.code.value||'').split(/\r?\n/);
+      try {
+        const res = await fetch('/api/explain-code',{method:'POST',body:new FormData(form)});
+        const j = await res.json();
+        const content = j.content||{};
+        let html=`<div class="d-flex justify-content-between align-items-center mb-2"><h5 class="mb-0">Explanation</h5><button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('${btoa(content.overview||'')}')">Copy</button></div>`;
+        if(content.overview) html+=`<p>${content.overview}</p>`;
+        if(Array.isArray(content.line_reviews)) html+=content.line_reviews.map(r=>`<div><strong>Line ${r.line}:</strong> ${r.review}</div>${r.reviewed_line?`<pre><code>${r.reviewed_line.replace(/</g,'&lt;')}</code></pre>`:''}`).join('');
+        // Display only the final code (no diff markers)
+        const finalCode = applyDiff(lines, content.udiff);
+        if (finalCode) {
+          const encoded = btoa(finalCode);
+          html += `
+            <div class="d-flex justify-content-between align-items-center mt-3">
+              <h6 class="mb-0">Final Code</h6>
+              <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('${encoded}')">Copy</button>
+            </div>
+            <pre><code>${finalCode.replace(/</g,'&lt;')}</code></pre>`;
+        }
+        el.innerHTML=`<article class="markdown-body">${html}</article>`;
+        hljs.highlightAll();
+      } catch(err){ el.textContent='Error: '+err.message; }
+    });
+
+    document.getElementById('form-fix').addEventListener('submit', async e => {
+      e.preventDefault();
+      const form=e.target, el=document.getElementById('result-fix'); el.textContent='Loading...';
+      const file=form.querySelector('input#fixFiles').files[0];
+      const lines = file ? (await file.text()).split(/\r?\n/) : (form.code.value||'').split(/\r?\n/);
+      try {
+        const res = await fetch('/api/fix-code',{method:'POST',body:new FormData(form)});
+        const j = await res.json(); const c=j.content||{};
+        let html=`<div class="d-flex justify-content-between align-items-center mb-2"><h5 class="mb-0">Fix Code</h5></div>`;
+        if(c.overview) html+=`<p>${c.overview}</p>`;
+        if(Array.isArray(c.line_reviews)) html+=c.line_reviews.map(r=>`<div><strong>Line ${r.line}:</strong> ${r.review}</div>${r.reviewed_line?`<pre><code>${r.reviewed_line.replace(/</g,'&lt;')}</code></pre>`:''}`).join('');
+        // Show final patched code without diff markers
+        const finalCode = applyDiff(lines, c.udiff);
+        if (finalCode) {
+          const encoded = btoa(finalCode);
+          html += `
+            <div class="d-flex justify-content-between align-items-center mt-3">
+              <h6 class="mb-0">Fixed Code</h6>
+              <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('${encoded}')">Copy</button>
+            </div>
+            <pre><code>${finalCode.replace(/</g,'&lt;')}</code></pre>`;
+        }
+        el.innerHTML=`<article class="markdown-body">${html}</article>`;
+        hljs.highlightAll();
+      } catch(err){ el.textContent='Error: '+err.message; }
+    });
+
+   document
+  .getElementById('form-compare')
+  .addEventListener('submit', async e => {
+    e.preventDefault();
+    const form     = e.target;
+    const resultEl = document.getElementById('result-compare');
+    resultEl.textContent = 'Loading…';
+
+    // helper to escape HTML
+    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    try {
+      const res  = await fetch('/api/compare-code', {
+        method: 'POST',
+        body:   new FormData(form)
+      });
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const json    = await res.json();
+      const { overview, line_reviews = [], udiff } = json.content || {};
+
+      // get raw code from textarea or file
+      const oldCode = form.oldCodeFile.files[0]
+        ? await form.oldCodeFile.files[0].text()
+        : form.oldCode.value;
+      const newCode = form.newCodeFile.files[0]
+        ? await form.newCodeFile.files[0].text()
+        : form.newCode.value;
+
+      // build the preview HTML
+      let html = `<article class="markdown-body p-4" style="background:#0d1117;color:#c9d1d9;">`;
+
+      if (overview) {
+        html += `<p>${esc(overview)}</p>`;
+      }
+
+      if (line_reviews.length) {
+        html += `<h5>Comments</h5>`;
+        line_reviews.forEach(r => {
+          html += `
+            <div class="code-comment mb-2">
+              <strong>Line ${r.line}:</strong> ${esc(r.review)}
+            </div>`;
+        });
+      }
+
+      // show full old & new code in collapsible panels
+      html += `
+        <details class="mb-3"><summary><strong>Full Old Code</strong></summary>
+          <pre><code class="language-javascript">${esc(oldCode)}</code></pre>
+        </details>
+        <details class="mb-4"><summary><strong>Full New Code</strong></summary>
+          <pre><code class="language-javascript">${esc(newCode)}</code></pre>
+        </details>
+        <div id="diff-container"></div>
+      </article>`;
+
+      resultEl.innerHTML = html;
+
+      // generate a full diff with all lines using jsdiff
+      const patch = Diff.createTwoFilesPatch(
+        'old_code.js',
+        'new_code.js',
+        oldCode,
+        newCode,
+        '',
+        '',
+        { context: Number.MAX_SAFE_INTEGER }
+      );
+      const diffUi = new Diff2HtmlUI(
+        document.getElementById('diff-container'),
+        patch,
+        {
+          drawFileList: false,
+          matching:     'lines',
+          outputFormat: 'side-by-side',
+          colorScheme:  'dark',
+          renderNothingWhenEmpty: true
+        }
+      );
+      diffUi.draw();
+      diffUi.highlightCode();
+
+      // highlight the full code blocks too
+      document.querySelectorAll('pre code').forEach(block => hljs.highlightBlock(block));
+    }
+    catch (err) {
+      resultEl.textContent = 'Error: ' + err.message;
+    }
+  });
+
+    // Format generic JSON response
+    const formatResponse = data => {
+      if(!data||typeof data!=='object') return marked.parse(data||'');
+      const c=data.content||{};
+      if(c.result) return marked.parse(c.result);
+      return JSON.stringify(c,null,2);
+    };
+
+    // History
+    const fetchHistory = async () => {
+      const resultEl = document.getElementById('result-history');
+      resultEl.textContent = 'Loading...';
+      try {
+        const res = await fetch('/api/history');
+        const json = await res.json();
+        if (!json.content || !Array.isArray(json.content.history) || json.content.history.length === 0) {
+          resultEl.innerHTML = '<p>No history yet.</p>';
+          return;
+        }
+
+        const historyHtml = json.content.history.map((item, index) => {
+          const date = new Date(item.timestamp).toLocaleString();
+          const id = `history-${index}`;
+
+          // Format the response based on its type
+          let responseHtml = '';
+          const { response, requestType, prompt } = item;
+
+          if (requestType === 'fixCode' || requestType === 'explainCode') {
+            // Custom format for fix/explain
+            responseHtml += response.overview ? `<p>${response.overview}</p>` : '';
+            if (response.line_reviews && response.line_reviews.length > 0) {
+              responseHtml += '<h5>Line-by-Line Changes</h5>';
+              response.line_reviews.forEach(r => {
+                responseHtml += `<div class="line-review">
+                  <div><strong>Line ${r.line} (${r.review_type}):</strong> ${r.review}</div>
+                  ${r.reviewed_line ? `<pre><code>${r.reviewed_line.replace(/</g, '&lt;')}</code></pre>` : ''}
+                </div>`;
+              });
+            }
+            if (response.udiff) {
+               responseHtml += `<h5>Code Changes</h5><pre><code class="diff">${response.udiff.replace(/</g, '&lt;')}</code></pre>`;
+            }
+          } else if (response && response.result) {
+            // For other types like readme/suggest, just render the markdown
+            responseHtml = marked.parse(response.result);
+          } else {
+             // Fallback for any other structure
+            responseHtml = `<pre><code>${JSON.stringify(response, null, 2)}</code></pre>`;
+          }
+
+          return `
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="heading-${id}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${id}" aria-expanded="false" aria-controls="collapse-${id}">
+                  <strong>${requestType}</strong>
+                </button>
+              </h2>
+              <div id="collapse-${id}" class="accordion-collapse collapse" aria-labelledby="heading-${id}" data-bs-parent="#historyAccordion">
+                <div class="accordion-body">
+                  <small class="text-muted d-block mb-3">${date}</small>
+                  <h5>Input</h5>
+                  <pre><code>${prompt.replace(/</g, '&lt;')}</code></pre>
+                  <h5 class="mt-4">Response</h5>
+                  <article class="markdown-body" style="border: none; padding: 0; background: transparent;">
+                    ${responseHtml}
+                  </article>
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+        resultEl.innerHTML = `<div class="accordion" id="historyAccordion">${historyHtml}</div>`;
+        hljs.highlightAll();
+      } catch (err) {
+        resultEl.textContent = 'Error: ' + err.message;
+      }
+    };
+    document.getElementById('history-tab').addEventListener('shown.bs.tab', fetchHistory);
+  </script>
+
+  <style>
+    body { background: #0d1117; color: #c9d1d9; font-family: 'Inter',sans-serif; }
+    .form-control, .form-select { background: #161b22; color: #c9d1d9; border: 1px solid #30363d; }
+    .form-control:focus, .form-select:focus { border-color: #58a6ff; }
+    .btn-primary { background: #238636; border: #238636; }
+    .btn-primary:hover { background: #2ea043; }
+    .nav-link { color: #8b949e !important; }
+    .nav-link.active { color: #c9d1d9 !important; background: #161b22 !important; }
+    .result-box { background: transparent; padding: 0; border: none; }
+    .markdown-body { padding: 1.5rem; margin-top: 1rem; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; }
+    .accordion-item, .accordion-header, .accordion-button {
+        background-color: transparent !important;
+        border: none !important;
+        color: #c9d1d9 !important;
+        box-shadow: none !important;
+    }
+    .accordion-item {
+        border-bottom: 1px solid #30363d !important;
+    }
+    .accordion-button::after {
+        filter: invert(1) grayscale(100%);
+    }
+    .accordion-body {
+        padding-top: 0;
+    }
+    .line-review {
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      border-left: 3px solid #30363d;
+    }
+    .code-comment {
+        margin-bottom: 0.5rem;
+        color: #e6edf3;
+    }
+
+    /* Diff2HTML Dark Theme Overrides */
+    .d2h-wrapper {
+        background-color: #0d1117;
+        color: #e6edf3;
+    }
+    .d2h-file-wrapper {
+        border: 1px solid #30363d !important;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        background-color: #0d1117 !important;
+    }
+    .d2h-file-header {
+        background-color: #161b22 !important;
+        color: #e6edf3 !important;
+        border-bottom: 1px solid #30363d !important;
+    }
+    .d2h-file-name {
+        color: #e6edf3 !important;
+        background-color: transparent !important;
+    }
+    .d2h-diff-table {
+        font-family: 'Inter', monospace;
+        background-color: #0d1117 !important;
+    }
+    .d2h-code-line {
+        background-color: #0d1117 !important;
+        color: #e6edf3 !important;
+    }
+    
+    /* collapse the diff's line‑number column */
+    .d2h-code-side-linenumber {
+      width: 2.5ch !important;
+      padding: 0 0.5ch !important;
+      font-size: 0.9em !important;
+      background-color: #161b22 !important;
+      color: #8b949e !important;
+      border-color: #30363d !important;
+    }
+    
+    .d2h-code-line-del {
+        background-color: rgba(248, 81, 73, 0.15) !important;
+    }
+    .d2h-code-line-ins {
+        background-color: rgba(63, 185, 80, 0.15) !important;
+    }
+    .d2h-file-side-diff {
+        background-color: #0d1117 !important;
+    }
+    .d2h-file-side-diff:nth-of-type(1) {
+        border-right: 1px solid #30363d !important;
+    }
+    
+    /* hide the "Viewed" label and file‑stats entirely */
+    .d2h-info,
+    .d2h-tag,
+    input[type="checkbox"],
+    label[for^="d2h-"],
+    .d2h-file-stats,
+    .d2h-file-list-header,
+    .d2h-file-list-line,
+    .d2h-file-switch,
+    .d2h-file-collapse {
+      display: none !important;
+    }
+    
+    .d2h-file-list-wrapper {
+        margin-bottom: 0 !important;
+    }
+    
+    /* style for your comments */
+    .code-comment {
+      padding: 0.75rem;
+      background: #161b22;
+      border-left: 4px solid #238636;
+      border-radius: 4px;
+      font-size: 0.95rem;
+      color: #c9d1d9;
+      margin-bottom: 0.75rem;
+    }
+    
+    /* details/summary panels */
+    details > summary {
+      cursor: pointer;
+      padding: 0.5rem;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+      color: #8b949e;
+    }
+    details[open] > summary {
+      background: #21262d;
+      color: #c9d1d9;
+    }
+    
+    /* full code blocks syntax highlight */
+    pre {
+      background: #161b22 !important;
+      border: 1px solid #30363d !important;
+      border-radius: 4px;
+      padding: 1rem !important;
+      overflow: auto;
+    }
+  </style>
+</body>
+</html>

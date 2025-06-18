@@ -1,5 +1,5 @@
 import { marked } from "marked";
-import { handleApiError } from "../utils/errorHandler.js";
+
 
 import {
   postGenerateReadmeApi,
@@ -9,7 +9,7 @@ import {
   postCompareCodeApi,
 } from "../services/postApiServices.js";
 
-export const generateReadme = async (req, res) => {
+export const generateReadme = async (req, res, next) => {
   try {
     const response = await postGenerateReadmeApi(req);
 
@@ -19,11 +19,11 @@ export const generateReadme = async (req, res) => {
       content: response,
     });
   } catch (error) {
-    return handleApiError(error, req, res);
+    next(error);
   }
 };
 
-export const suggestApi = async (req, res) => {
+export const suggestApi = async (req, res, next) => {
   try {
     const response = await postSuggestApi(req);
 
@@ -33,11 +33,11 @@ export const suggestApi = async (req, res) => {
       content: response,
     });
   } catch (error) {
-    return handleApiError(error, req, res);
+    next(error);
   }
 };
 
-export const explainCode = async (req, res) => {
+export const explainCode = async (req, res, next) => {
   try {
     const response = await postExplainCodeApi(req);
 
@@ -47,25 +47,25 @@ export const explainCode = async (req, res) => {
       content: response,
     });
   } catch (error) {
-    return handleApiError(error, req, res);
+    next(error);
   }
 };
 
-export const fixCode = async (req, res) => {
+export const fixCode = async (req, res, next) => {
   try {
     const response = await postFixCodeApi(req);
-
+    
     return res.status(200).json({
       requestType: "Fix code",
       timeStamp: new Date().toISOString(),
       content: response,
     });
   } catch (error) {
-    return handleApiError(error, req, res);
+    next(error); 
   }
 };
 
-export const compareCode = async (req, res) => {
+export const compareCode = async (req, res, next) => {
   try {
     const response = await postCompareCodeApi(req);
 
@@ -75,7 +75,7 @@ export const compareCode = async (req, res) => {
       content: response,
     });
   } catch (error) {
-    return handleApiError(error, req, res);
+    next(error);
   }
 };
 
@@ -88,74 +88,33 @@ export const getUserRequestHistory = async (req, res) => {
     );
     const history = await getUserHistory(limit);
 
-    if (!history || history.length === 0) {
-      return res.status(200).json({
-        requestType: "Get User History",
-        timeStamp: new Date().toISOString(),
-        content: {
-          history: [],
-          count: 0,
-        },
-      });
-    }
-
     // Format history data with markdown
-    const formattedHistory = history.map((item) => {
+    const formattedHistory = (history || []).map((item) => {
       let content = "";
-
-      // Format response based on request type and content
-      if (
-        item.responseStructured &&
-        Object.keys(item.responseStructured).length > 0
-      ) {
-        const response = item.responseStructured;
-        if (
-          item.requestType === "fixCode" ||
-          item.requestType === "explainCode"
-        ) {
-          content = `### Overview\n${
-            response.overview
-          }\n\n### Issues Found\n${response.line_reviews
-            .map(
-              (review) =>
-                `- **Line ${review.line}** (${review.review_type}): ${review.review}`
-            )
-            .join("\n")}\n\n### Code Changes\n\`\`\`diff\n${
-            response.udiff || "No changes required"
-          }\n\`\`\``;
-        } else {
-          // For other structured responses
-          content = "```json\n" + JSON.stringify(response, null, 2) + "\n```";
-        }
+      if (item.responseStructured && Object.keys(item.responseStructured).length > 0) {
+        content = item.responseStructured;
       } else if (item.responseRaw) {
-        content = item.responseRaw;
+        content = { result: item.responseRaw };
       }
-
-      const formattedMarkdown = `### Input\n\`\`\`\n${item.prompt}\n\`\`\`\n\n### Response\n${content}`;
-
       return {
-        ...item.toObject(),
-        responseRaw: formattedMarkdown, // Use responseRaw since that's what the template expects
+        prompt: item.prompt,
+        response: content,
+        requestType: item.requestType,
+        timestamp: item.timeStamp,
       };
     });
 
-    // Get total pages
-    const totalPages = Math.ceil(history.length / limit);
-    const currentPage = parseInt(req.query.page) || 1;
-
-    res.render("history", {
-      title: "Request History",
-      activePage: "history",
-      history: formattedHistory,
-      currentPage: currentPage,
-      totalPages: totalPages,
-      marked: marked,
+    return res.status(200).json({
+      requestType: "Get User History",
+      timeStamp: new Date().toISOString(),
+      content: {
+        history: formattedHistory,
+        count: formattedHistory.length,
+      },
     });
   } catch (error) {
-    res.status(error.statusCode || 500).render("error", {
-      title: "Error",
-      message: "Failed to retrieve history",
-      activePage: "",
+    return res.status(error.statusCode || 500).json({
+      error: "Failed to retrieve history",
     });
   }
 };

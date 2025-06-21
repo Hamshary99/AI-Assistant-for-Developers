@@ -134,4 +134,38 @@ pre {
   border-radius: 4px;
   padding: 1rem !important;
   overflow: auto;
+}
+
+.markdown-body pre code {
+  color: #abb2bf; /* A light grey from the Atom One Dark theme for good visibility */
+}
+
+/* File upload badges */
+.file-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.8em;
+    font-weight: 500;
+    color: #c9d1d9;
+    background-color: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 2em;
+    margin-right: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.file-badge-remove {
+    margin-left: 0.5rem;
+    background: none;
+    border: none;
+    color: #8b949e;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 0;
+    line-height: 1;
+}
+
+.file-badge-remove:hover {
+    color: #f0f6fc;
 } 

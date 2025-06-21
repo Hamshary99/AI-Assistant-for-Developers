@@ -15,7 +15,7 @@
   <!-- Diff2Html CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" />
   <!-- Highlight.js Theme -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css" />
   <link rel="stylesheet" href="style.css" />
 
   <!-- Scripts -->
@@ -59,7 +59,7 @@
             <label class="form-label">Project Description</label>
             <textarea class="form-control pe-5" name="projectDescription" rows="3" required placeholder="Describe your project or attach files"></textarea>
             <input type="file" name="files" class="form-control file-input mb-2" id="readmeFiles" multiple />
-            <small class="text-muted d-block selected-files"></small>
+            <div class="selected-files mt-2"></div>
           </div>
           <button class="btn btn-primary" type="submit">Submit</button>
         </form>
@@ -95,7 +95,7 @@
             <label class="form-label">Paste Code (optional)</label>
             <textarea class="form-control pe-5" name="code" rows="6" placeholder="Paste code or attach a file"></textarea>
             <input type="file" name="files" class="form-control file-input mb-2" id="explFiles" multiple />
-            <small class="text-muted d-block selected-files"></small>
+            <div class="selected-files mt-2"></div>
           </div>
           <button class="btn btn-primary" type="submit">Submit</button>
         </form>
@@ -109,7 +109,7 @@
             <label class="form-label">Paste Code (optional)</label>
             <textarea class="form-control pe-5" name="code" rows="6" placeholder="Paste code or attach a file"></textarea>
             <input type="file" name="files" class="form-control file-input mb-2" id="fixFiles" multiple />
-            <small class="text-muted d-block selected-files"></small>
+            <div class="selected-files mt-2"></div>
           </div>
           <button class="btn btn-primary" type="submit">Submit</button>
         </form>
@@ -123,12 +123,14 @@
             <div class="col-md-6 mb-3">
               <label class="form-label">Old Code / File</label>
               <textarea class="form-control" name="oldCode" rows="6" placeholder="Paste old code or upload a file"></textarea>
-              <input type="file" name="oldCodeFile" class="form-control file-input mt-2" />
+              <input type="file" name="oldCodeFile" id="compareOldFile" class="form-control file-input mt-2" />
+              <div class="selected-files mt-2"></div>
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">New Code / File</label>
               <textarea class="form-control" name="newCode" rows="6" placeholder="Paste new code or upload a file"></textarea>
-              <input type="file" name="newCodeFile" class="form-control file-input mt-2" />
+              <input type="file" name="newCodeFile" id="compareNewFile" class="form-control file-input mt-2" />
+              <div class="selected-files mt-2"></div>
             </div>
           </div>
           <button class="btn btn-primary" type="submit">Compare</button>
@@ -143,10 +145,59 @@
     </div>
   </div>
 
+  <!-- Rate Limit Modal -->
+  <div class="modal fade" id="rateLimitModal" tabindex="-1" aria-labelledby="rateLimitModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header">
+          <h5 class="modal-title" id="rateLimitModalLabel">Rate Limit Exceeded</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>You have made too many requests. Please wait before trying again.</p>
+          <p>Time remaining: <strong id="rateLimitCountdown">0</strong> seconds.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
+    let rateLimitModal;
+    let countdownInterval;
+    const fileStore = new Map();
+
+    const updateFileDisplay = (inputEl) => {
+      const container = inputEl.closest('.position-relative, .col-md-6').querySelector('.selected-files');
+      if (!container) return;
+      container.innerHTML = '';
+      const files = fileStore.get(inputEl.id) || [];
+
+      files.forEach(file => {
+        const badge = document.createElement('span');
+        badge.className = 'file-badge';
+        badge.textContent = file.name;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'file-badge-remove';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.onclick = () => {
+          const currentFiles = fileStore.get(inputEl.id) || [];
+          fileStore.set(inputEl.id, currentFiles.filter(f => f !== file));
+          if ((fileStore.get(inputEl.id) || []).length === 0) {
+            inputEl.value = '';
+          }
+          updateFileDisplay(inputEl);
+        };
+
+        badge.appendChild(removeBtn);
+        container.appendChild(badge);
+      });
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
       const lastTab = localStorage.getItem('activeTab');
       if (lastTab) {
@@ -156,15 +207,41 @@
       document.querySelector('#endpointTabs').addEventListener('shown.bs.tab', e => {
         localStorage.setItem('activeTab', e.target.id);
       });
-    });
 
-    // File input labels
-    document.querySelectorAll('input.file-input').forEach(inp => {
-      inp.addEventListener('change', () => {
-        const lbl = inp.closest('.position-relative').querySelector('.selected-files');
-        lbl.textContent = Array.from(inp.files).map(f => f.name).join(', ');
+      rateLimitModal = new bootstrap.Modal(document.getElementById('rateLimitModal'));
+
+      document.getElementById('rateLimitModal').addEventListener('hidden.bs.modal', () => {
+        if(countdownInterval) clearInterval(countdownInterval);
+      });
+
+      document.querySelectorAll('input.file-input').forEach(inp => {
+        inp.addEventListener('change', () => {
+          fileStore.set(inp.id, Array.from(inp.files));
+          updateFileDisplay(inp);
+        });
       });
     });
+
+    const showRateLimitPopup = (retryAfter) => {
+      const countdownEl = document.getElementById('rateLimitCountdown');
+      let timeLeft = retryAfter;
+      countdownEl.textContent = timeLeft;
+
+      rateLimitModal.show();
+
+      if (countdownInterval) clearInterval(countdownInterval);
+
+      countdownInterval = setInterval(() => {
+        timeLeft--;
+        countdownEl.textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(countdownInterval);
+          rateLimitModal.hide();
+        }
+      }, 1000);
+    };
+
+    // File input labels are now replaced by the badge system
 
     // Diff apply utility
     const applyDiff = (orig, diffText) => {
@@ -220,7 +297,6 @@
     };
 
     // Custom handler for Generate README: show preview markdown
-
     document.getElementById('form-readme')
       .addEventListener('submit', async e => {
         e.preventDefault();
@@ -229,10 +305,26 @@
         resultEl.textContent = 'Loading…';
 
         try {
+          const formData = new FormData(form);
+          formData.delete('files');
+          const files = fileStore.get('readmeFiles') || [];
+          for (const file of files) {
+            formData.append('files', file);
+          }
+
           const res  = await fetch('/api/generate-readme', {
             method: 'POST',
-            body: new FormData(form)
+            body: formData
           });
+
+          if (res.status === 429) {
+            const json = await res.json();
+            showRateLimitPopup(json.retryAfter);
+            resultEl.textContent = `Rate limit exceeded. Please wait.`;
+            return;
+          }
+          if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
+
           const json = await res.json();
           const md   = json.content?.result || '';
           const enc  = btoa(md);
@@ -262,7 +354,6 @@
         }
       });
 
-
     document.getElementById('form-suggest').addEventListener('submit', async e => {
       e.preventDefault();
       const form = e.target;
@@ -279,6 +370,15 @@
             method: form.method.value,
           }),
         });
+
+        if (res.status === 429) {
+          const json = await res.json();
+          showRateLimitPopup(json.retryAfter);
+          resultEl.textContent = `Rate limit exceeded. Please wait.`;
+          return;
+        }
+        if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
+
         const json = await res.json();
         resultEl.innerHTML = `
           <article class="markdown-body">
@@ -292,10 +392,26 @@
     document.getElementById('form-explain').addEventListener('submit', async e => {
       e.preventDefault();
       const form=e.target, el=document.getElementById('result-explain'); el.textContent='Loading...';
-      const file=form.querySelector('input#explFiles').files[0];
+      
+      const files = fileStore.get('explFiles') || [];
+      const file = files[0];
       const lines = file ? (await file.text()).split(/\r?\n/) : (form.code.value||'').split(/\r?\n/);
+      
       try {
-        const res = await fetch('/api/explain-code',{method:'POST',body:new FormData(form)});
+        const formData = new FormData(form);
+        formData.delete('files');
+        for(const f of files) formData.append('files', f);
+
+        const res = await fetch('/api/explain-code',{method:'POST',body:formData});
+
+        if (res.status === 429) {
+          const json = await res.json();
+          showRateLimitPopup(json.retryAfter);
+          el.textContent = `Rate limit exceeded. Please wait.`;
+          return;
+        }
+        if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
+
         const j = await res.json();
         const content = j.content||{};
         let html=`<div class="d-flex justify-content-between align-items-center mb-2"><h5 class="mb-0">Explanation</h5><button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('${btoa(content.overview||'')}')">Copy</button></div>`;
@@ -320,10 +436,26 @@
     document.getElementById('form-fix').addEventListener('submit', async e => {
       e.preventDefault();
       const form=e.target, el=document.getElementById('result-fix'); el.textContent='Loading...';
-      const file=form.querySelector('input#fixFiles').files[0];
+      
+      const files = fileStore.get('fixFiles') || [];
+      const file = files[0];
       const lines = file ? (await file.text()).split(/\r?\n/) : (form.code.value||'').split(/\r?\n/);
+
       try {
-        const res = await fetch('/api/fix-code',{method:'POST',body:new FormData(form)});
+        const formData = new FormData(form);
+        formData.delete('files');
+        for (const f of files) formData.append('files', f);
+
+        const res = await fetch('/api/fix-code',{method:'POST',body:formData});
+
+        if (res.status === 429) {
+          const json = await res.json();
+          showRateLimitPopup(json.retryAfter);
+          el.textContent = `Rate limit exceeded. Please wait.`;
+          return;
+        }
+        if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
+
         const j = await res.json(); const c=j.content||{};
         let html=`<div class="d-flex justify-content-between align-items-center mb-2"><h5 class="mb-0">Fix Code</h5></div>`;
         if(c.overview) html+=`<p>${c.overview}</p>`;
@@ -344,95 +476,111 @@
       } catch(err){ el.textContent='Error: '+err.message; }
     });
 
-   document
-  .getElementById('form-compare')
-  .addEventListener('submit', async e => {
-    e.preventDefault();
-    const form     = e.target;
-    const resultEl = document.getElementById('result-compare');
-    resultEl.textContent = 'Loading…';
+    document
+    .getElementById('form-compare')
+    .addEventListener('submit', async e => {
+      e.preventDefault();
+      const form     = e.target;
+      const resultEl = document.getElementById('result-compare');
+      resultEl.textContent = 'Loading…';
 
-    // helper to escape HTML
-    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      // helper to escape HTML
+      const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-    try {
-      const res  = await fetch('/api/compare-code', {
-        method: 'POST',
-        body:   new FormData(form)
-      });
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-      const json    = await res.json();
-      const { overview, line_reviews = [], udiff } = json.content || {};
+      try {
+        const formData = new FormData(form);
+        formData.delete('oldCodeFile');
+        formData.delete('newCodeFile');
+        const oldFiles = fileStore.get('compareOldFile') || [];
+        const newFiles = fileStore.get('compareNewFile') || [];
+        if (oldFiles.length > 0) formData.append('oldCodeFile', oldFiles[0]);
+        if (newFiles.length > 0) formData.append('newCodeFile', newFiles[0]);
 
-      // get raw code from textarea or file
-      const oldCode = form.oldCodeFile.files[0]
-        ? await form.oldCodeFile.files[0].text()
-        : form.oldCode.value;
-      const newCode = form.newCodeFile.files[0]
-        ? await form.newCodeFile.files[0].text()
-        : form.newCode.value;
-
-      // build the preview HTML
-      let html = `<article class="markdown-body p-4" style="background:#0d1117;color:#c9d1d9;">`;
-
-      if (overview) {
-        html += `<p>${esc(overview)}</p>`;
-      }
-
-      if (line_reviews.length) {
-        html += `<h5>Comments</h5>`;
-        line_reviews.forEach(r => {
-          html += `
-            <div class="code-comment mb-2">
-              <strong>Line ${r.line}:</strong> ${esc(r.review)}
-            </div>`;
+        const res  = await fetch('/api/compare-code', {
+          method: 'POST',
+          body:   formData
         });
-      }
 
-      // show full old & new code in collapsible panels
-      html += `
-        <details class="mb-3"><summary><strong>Full Old Code</strong></summary>
-          <pre><code class="language-javascript">${esc(oldCode)}</code></pre>
-        </details>
-        <details class="mb-4"><summary><strong>Full New Code</strong></summary>
-          <pre><code class="language-javascript">${esc(newCode)}</code></pre>
-        </details>
-        <div id="diff-container"></div>
-      </article>`;
-
-      resultEl.innerHTML = html;
-
-      // generate a full diff with all lines using jsdiff
-      const patch = Diff.createTwoFilesPatch(
-        'old_code.js',
-        'new_code.js',
-        oldCode,
-        newCode,
-        '',
-        '',
-        { context: Number.MAX_SAFE_INTEGER }
-      );
-      const diffUi = new Diff2HtmlUI(
-        document.getElementById('diff-container'),
-        patch,
-        {
-          drawFileList: false,
-          matching:     'lines',
-          outputFormat: 'side-by-side',
-          colorScheme:  'dark',
-          renderNothingWhenEmpty: true
+        if (res.status === 429) {
+          const json = await res.json();
+          showRateLimitPopup(json.retryAfter);
+          resultEl.textContent = `Rate limit exceeded. Please wait.`;
+          return;
         }
-      );
-      diffUi.draw();
-      diffUi.highlightCode();
 
-      // highlight the full code blocks too
-      document.querySelectorAll('pre code').forEach(block => hljs.highlightBlock(block));
-    }
-    catch (err) {
-      resultEl.textContent = 'Error: ' + err.message;
-    }
-  });
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const json    = await res.json();
+        const { overview, line_reviews = [], udiff } = json.content || {};
+
+        // get raw code from file store or textarea
+        const oldCode = oldFiles.length > 0
+          ? await oldFiles[0].text()
+          : form.oldCode.value;
+        const newCode = newFiles.length > 0
+          ? await newFiles[0].text()
+          : form.newCode.value;
+
+        // build the preview HTML
+        let html = `<article class="markdown-body p-4" style="background:#0d1117;color:#c9d1d9;">`;
+
+        if (overview) {
+          html += `<p>${esc(overview)}</p>`;
+        }
+
+        if (line_reviews.length) {
+          html += `<h5>Comments</h5>`;
+          line_reviews.forEach(r => {
+            html += `
+              <div class="code-comment mb-2">
+                <strong>Line ${r.line}:</strong> ${esc(r.review)}
+              </div>`;
+          });
+        }
+
+        // show full old & new code in collapsible panels
+        html += `
+          <details class="mb-3"><summary><strong>Full Old Code</strong></summary>
+            <pre><code class="language-javascript">${esc(oldCode)}</code></pre>
+          </details>
+          <details class="mb-4"><summary><strong>Full New Code</strong></summary>
+            <pre><code class="language-javascript">${esc(newCode)}</code></pre>
+          </details>
+          <div id="diff-container"></div>
+        </article>`;
+
+        resultEl.innerHTML = html;
+
+        // generate a full diff with all lines using jsdiff
+        const patch = Diff.createTwoFilesPatch(
+          'old_code.js',
+          'new_code.js',
+          oldCode,
+          newCode,
+          '',
+          '',
+          { context: Number.MAX_SAFE_INTEGER }
+        );
+        const diffUi = new Diff2HtmlUI(
+          document.getElementById('diff-container'),
+          patch,
+          {
+            drawFileList: false,
+            matching:     'lines',
+            outputFormat: 'side-by-side',
+            colorScheme:  'dark',
+            renderNothingWhenEmpty: true
+          }
+        );
+        diffUi.draw();
+        diffUi.highlightCode();
+
+        // highlight the full code blocks too
+        document.querySelectorAll('pre code').forEach(block => hljs.highlightBlock(block));
+      }
+      catch (err) {
+        resultEl.textContent = 'Error: ' + err.message;
+      }
+    });
 
     // Format generic JSON response
     const formatResponse = data => {
@@ -448,6 +596,13 @@
       resultEl.textContent = 'Loading...';
       try {
         const res = await fetch('/api/history');
+        if (res.status === 429) {
+          const json = await res.json();
+          showRateLimitPopup(json.retryAfter);
+          resultEl.textContent = `Rate limit exceeded. Please wait.`;
+          return;
+        }
+        if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
         const json = await res.json();
         if (!json.content || !Array.isArray(json.content.history) || json.content.history.length === 0) {
           resultEl.innerHTML = '<p>No history yet.</p>';

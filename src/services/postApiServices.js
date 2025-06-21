@@ -194,8 +194,8 @@ Do not suggest fixes for code that is not present.
 export const postCompareCodeApi = async (req) => {
   try {
     const { oldCode: oldCodeText, newCode: newCodeText } = req.body;
-    let oldCode = oldCodeText;
-    let newCode = newCodeText;
+    let oldCode = oldCodeText || "";
+    let newCode = newCodeText || "";
 
     // Handle file uploads
     if (req.files && req.files.length > 0) {

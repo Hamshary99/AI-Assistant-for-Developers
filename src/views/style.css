@@ -1,0 +1,137 @@
+body { background: #0d1117; color: #c9d1d9; font-family: 'Inter',sans-serif; }
+.form-control, .form-select { background: #161b22; color: #c9d1d9; border: 1px solid #30363d; }
+.form-control:focus, .form-select:focus { border-color: #58a6ff; }
+.btn-primary { background: #238636; border: #238636; }
+.btn-primary:hover { background: #2ea043; }
+.nav-link { color: #8b949e !important; }
+.nav-link.active { color: #c9d1d9 !important; background: #161b22 !important; }
+.result-box { background: transparent; padding: 0; border: none; }
+.markdown-body { padding: 1.5rem; margin-top: 1rem; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #ffffff; }
+.accordion-item, .accordion-header, .accordion-button {
+    background-color: transparent !important;
+    border: none !important;
+    color: #c9d1d9 !important;
+    box-shadow: none !important;
+}
+.accordion-item {
+    border-bottom: 1px solid #30363d !important;
+}
+.accordion-button::after {
+    filter: invert(1) grayscale(100%);
+}
+.accordion-body {
+    padding-top: 0;
+}
+.line-review {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border-left: 3px solid #30363d;
+}
+.code-comment {
+    margin-bottom: 0.5rem;
+    color: #e6edf3;
+}
+
+/* Diff2HTML Dark Theme Overrides */
+.d2h-wrapper {
+    background-color: #0d1117;
+    color: #e6edf3;
+}
+.d2h-file-wrapper {
+    border: 1px solid #30363d !important;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    background-color: #0d1117 !important;
+}
+.d2h-file-header {
+    background-color: #161b22 !important;
+    color: #e6edf3 !important;
+    border-bottom: 1px solid #30363d !important;
+}
+.d2h-file-name {
+    color: #e6edf3 !important;
+    background-color: transparent !important;
+}
+.d2h-diff-table {
+    font-family: 'Inter', monospace;
+    background-color: #0d1117 !important;
+}
+.d2h-code-line {
+    background-color: #0d1117 !important;
+    color: #e6edf3 !important;
+}
+
+/* collapse the diff's line‑number column */
+.d2h-code-side-linenumber {
+  width: 2.5ch !important;
+  padding: 0 0.5ch !important;
+  font-size: 0.9em !important;
+  background-color: #161b22 !important;
+  color: #8b949e !important;
+  border-color: #30363d !important;
+}
+
+.d2h-code-line-del {
+    background-color: rgba(248, 81, 73, 0.15) !important;
+}
+.d2h-code-line-ins {
+    background-color: rgba(63, 185, 80, 0.15) !important;
+}
+.d2h-file-side-diff {
+    background-color: #0d1117 !important;
+}
+.d2h-file-side-diff:nth-of-type(1) {
+    border-right: 1px solid #30363d !important;
+}
+
+/* hide the "Viewed" label and file‑stats entirely */
+.d2h-info,
+.d2h-tag,
+input[type="checkbox"],
+label[for^="d2h-"],
+.d2h-file-stats,
+.d2h-file-list-header,
+.d2h-file-list-line,
+.d2h-file-switch,
+.d2h-file-collapse {
+  display: none !important;
+}
+
+.d2h-file-list-wrapper {
+    margin-bottom: 0 !important;
+}
+
+/* style for your comments */
+.code-comment {
+  padding: 0.75rem;
+  background: #161b22;
+  border-left: 4px solid #238636;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  color: #c9d1d9;
+  margin-bottom: 0.75rem;
+}
+
+/* details/summary panels */
+details > summary {
+  cursor: pointer;
+  padding: 0.5rem;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  color: #8b949e;
+}
+details[open] > summary {
+  background: #21262d;
+  color: #c9d1d9;
+}
+
+/* full code blocks syntax highlight */
+pre {
+  background: #161b22 !important;
+  border: 1px solid #30363d !important;
+  border-radius: 4px;
+  padding: 1rem !important;
+  overflow: auto;
+} 

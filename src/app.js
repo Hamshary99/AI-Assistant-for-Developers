@@ -41,6 +41,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Add request logging middleware
 app.use(requestLogger);
 
+// Serve static files from the 'views' directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, "views")));
+
 // API routes under /api/*
 app.use("/api", router);
 
@@ -50,8 +55,6 @@ app.get("/", (req, res) => {
 });
 
 // ===== Serve React production build =====
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const reactBuildPath = path.join(__dirname, "views", "dist");
 
 app.use(express.static(reactBuildPath));
